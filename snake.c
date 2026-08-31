@@ -286,8 +286,23 @@ void snake_advance(uint8_t s) {
 		nx = snake2.x[snake2.start] + ddx[snake2.direction];
 		ny = snake2.y[snake2.start] + ddy[snake2.direction];
 		content = gfx_scr_get_xy(nx, ny);
-		if (content != TILE_EMPTY) {		// collision (!!!!!!!!!!!!!!!!!!!!!!!!)
-			return;
+		if (content != TILE_EMPTY) {			// collision
+			if (content == TILE_FOOD) {			// collision with food
+				snake2.grow = 2;
+				gfx_scr_set_xy(nx, ny, TILE_EMPTY);
+			} else
+				if (content == TILE_HAZARD) {	// collision with hazard
+					if (snake2.length <= 5) {
+						snake2.status = SNAKE_DEAD;
+						snake_set_dead_color(2);
+					} else {
+						snake2.length--;
+						snake2.end++;
+						snake_draw_tail(2);
+					}
+					return;
+				} else
+					return;
 		}
 		snake2.start++;
 		snake2.x[snake2.start] = nx;
@@ -308,13 +323,21 @@ void snake_init() {
 	snake_reset(1);
 	snake1.status = SNAKE_ACTIVE;
 	snake1.direction = SDIR_LEFT;
+	snake_add(1, 18, 10);
+	snake_add(1, 17, 10);
+	snake_add(1, 16, 10);
 	snake_add(1, 15, 10);
 	snake_add(1, 14, 10);
 	snake_add(1, 13, 10);
-	snake_add(1, 12, 10);
-	snake_add(1, 11, 10);
-	snake_add(1, 10, 10);
 	snake_reset(2);
+	snake2.status = SNAKE_ACTIVE;
+	snake2.direction = SDIR_RIGHT;
+	snake_add(2, 22, 10);
+	snake_add(2, 23, 10);
+	snake_add(2, 24, 10);
+	snake_add(2, 25, 10);
+	snake_add(2, 26, 10);
+	snake_add(2, 27, 10);
 }
 
 uint8_t wait_for_key() {
@@ -363,7 +386,7 @@ void wait_for_frame() {
 
 void snake_control(uint8_t s) {
 	if (s == 1) {
-		uint8_t joy = ~cia1.pra;
+		uint8_t joy = ~cia1.pra;		// joystick 2
 		if ((joy & JOY_LEFT) && snake1.direction != SDIR_RIGHT)
 			snake1.direction = SDIR_LEFT;
 		if ((joy & JOY_RIGHT) && snake1.direction != SDIR_LEFT)
@@ -372,6 +395,20 @@ void snake_control(uint8_t s) {
 			snake1.direction = SDIR_UP;
 		if ((joy & JOY_DOWN) && snake1.direction != SDIR_UP)
 			snake1.direction = SDIR_DOWN;
+//		if (!(joy & JOY_FIRE))
+//			fire();
+		return;
+	}
+	if (s == 2) {
+		uint8_t joy = ~cia1.prb;		// joystick 1
+		if ((joy & JOY_LEFT) && snake2.direction != SDIR_RIGHT)
+			snake2.direction = SDIR_LEFT;
+		if ((joy & JOY_RIGHT) && snake2.direction != SDIR_LEFT)
+			snake2.direction = SDIR_RIGHT;
+		if ((joy & JOY_UP) && snake2.direction != SDIR_DOWN)
+			snake2.direction = SDIR_UP;
+		if ((joy & JOY_DOWN) && snake2.direction != SDIR_UP)
+			snake2.direction = SDIR_DOWN;
 //		if (!(joy & JOY_FIRE))
 //			fire();
 		return;
@@ -399,6 +436,7 @@ int main(void) {
 	for(;;) {
 		wait_for_frame();
 		snake_control(1);
+
 		if(advance_counter++ > 5) {
 			if (snake1.status == SNAKE_ACTIVE)
 				snake_advance(1);

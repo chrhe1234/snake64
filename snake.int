@@ -1,57 +1,57 @@
 --------------------------------------------------------------------
-main: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:381
+main: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:418
 $00 R0(C), $06 R1(C), 
 L0: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 382)		CALLN		<-	V(1 'gfx_init')+0 	{}
-0001 ( 383)		CALLN		<-	V(4 'gfx_draw_frame')+0 	{}
-0002 ( 385)		STOREC1		<-	V(3 '')+0 , CC:35	{}
-0003 ( 385)		STOREC1		<-	V(4 '')+0 , CC:20	{}
-0004 ( 385)		CALLN		<-	V(7 'gfx_draw_food')+0 	{}
-0005 ( 386)		STOREC1		<-	V(3 '')+0 , CC:35	{}
-0006 ( 386)		STOREC1		<-	V(4 '')+0 , CC:5	{}
-0007 ( 386)		CALLN		<-	V(7 'gfx_draw_food')+0 	{}
-0008 ( 387)		STOREC1		<-	V(3 '')+0 , CC:5	{}
-0009 ( 387)		STOREC1		<-	V(4 '')+0 , CC:20	{}
-000a ( 387)		CALLN		<-	V(7 'gfx_draw_food')+0 	{}
-000b ( 388)		STOREC1		<-	V(3 '')+0 , CC:5	{}
-000c ( 388)		STOREC1		<-	V(4 '')+0 , CC:5	{}
-000d ( 388)		CALLN		<-	V(7 'gfx_draw_food')+0 	{}
-000e ( 390)		STOREC1		<-	V(3 '')+0 , CC:20	{}
-000f ( 390)		STOREC1		<-	V(4 '')+0 , CC:3	{}
-0010 ( 390)		CALLN		<-	V(8 'gfx_draw_hazard')+0 	{}
-0011 ( 391)		STOREC1		<-	V(3 '')+0 , CC:20	{}
-0012 ( 391)		STOREC1		<-	V(4 '')+0 , CC:20	{}
-0013 ( 391)		CALLN		<-	V(8 'gfx_draw_hazard')+0 	{}
-0014 ( 393)		CALLN		<-	V(9 'snake_init')+0 	{}
-0015 ( 394)		STOREC1		<-	V(3 '')+0 , CC:1	{}
-0016 ( 394)		CALLN		<-	V(12 'snake_draw_head')+0 	{}
-0017 ( 395)		STOREC1		<-	V(3 '')+0 , CC:1	{}
-0018 ( 395)		CALLN		<-	V(14 'snake_draw_body')+0 	{}
-0019 ( 396)		STOREC1		<-	V(3 '')+0 , CC:1	{}
-001a ( 396)		CALLN		<-	V(15 'snake_draw_tail')+0 	{}
-001b ( 398)		CONST	R1(C)[0..0]	<-	CI:0	{}
-001c ( 401)		JUMP		<-		{}
+0000 ( 419)		CALLN		<-	V(1 'gfx_init')+0 	{}
+0001 ( 420)		CALLN		<-	V(4 'gfx_draw_frame')+0 	{}
+0002 ( 422)		STOREC1		<-	V(3 '')+0 , CC:35	{}
+0003 ( 422)		STOREC1		<-	V(4 '')+0 , CC:20	{}
+0004 ( 422)		CALLN		<-	V(7 'gfx_draw_food')+0 	{}
+0005 ( 423)		STOREC1		<-	V(3 '')+0 , CC:35	{}
+0006 ( 423)		STOREC1		<-	V(4 '')+0 , CC:5	{}
+0007 ( 423)		CALLN		<-	V(7 'gfx_draw_food')+0 	{}
+0008 ( 424)		STOREC1		<-	V(3 '')+0 , CC:5	{}
+0009 ( 424)		STOREC1		<-	V(4 '')+0 , CC:20	{}
+000a ( 424)		CALLN		<-	V(7 'gfx_draw_food')+0 	{}
+000b ( 425)		STOREC1		<-	V(3 '')+0 , CC:5	{}
+000c ( 425)		STOREC1		<-	V(4 '')+0 , CC:5	{}
+000d ( 425)		CALLN		<-	V(7 'gfx_draw_food')+0 	{}
+000e ( 427)		STOREC1		<-	V(3 '')+0 , CC:20	{}
+000f ( 427)		STOREC1		<-	V(4 '')+0 , CC:3	{}
+0010 ( 427)		CALLN		<-	V(8 'gfx_draw_hazard')+0 	{}
+0011 ( 428)		STOREC1		<-	V(3 '')+0 , CC:20	{}
+0012 ( 428)		STOREC1		<-	V(4 '')+0 , CC:20	{}
+0013 ( 428)		CALLN		<-	V(8 'gfx_draw_hazard')+0 	{}
+0014 ( 430)		CALLN		<-	V(9 'snake_init')+0 	{}
+0015 ( 431)		STOREC1		<-	V(3 '')+0 , CC:1	{}
+0016 ( 431)		CALLN		<-	V(12 'snake_draw_head')+0 	{}
+0017 ( 432)		STOREC1		<-	V(3 '')+0 , CC:1	{}
+0018 ( 432)		CALLN		<-	V(14 'snake_draw_body')+0 	{}
+0019 ( 433)		STOREC1		<-	V(3 '')+0 , CC:1	{}
+001a ( 433)		CALLN		<-	V(15 'snake_draw_tail')+0 	{}
+001b ( 435)		CONST	R1(C)[0..0]	<-	CI:0	{}
+001c ( 438)		JUMP		<-		{}
 		==> 2
 L2: <= D-1: (4) Head P62 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 401)		STOREC1		<-	V(0 '')+0 , CC:1	{}
-0001 ( 400)		CALLN		<-	V(17 'wait_for_frame')+0 	{}
-0002 ( 401)		CALLN		<-	V(18 'snake_control')+0 	{}
-0003 ( 402)		MOVE	R0(C)[0..255]	<-	R1(C)[0..]	{}
-0004 ( 402)		BINOP1	R1(C)[1..]	<-	R1(CF)[0..], CI:1	{}
-0005 ( 402)		RELOP27	R0(B)[0..1]	<-	R0(CF)[0..], CC:5	{}
-0006 ( 402)		BRANCH		<-	R0(BF)[0..1]	{}
+0000 ( 438)		STOREC1		<-	V(0 '')+0 , CC:1	{}
+0001 ( 437)		CALLN		<-	V(17 'wait_for_frame')+0 	{}
+0002 ( 438)		CALLN		<-	V(18 'snake_control')+0 	{}
+0003 ( 440)		MOVE	R0(C)[0..255]	<-	R1(C)[0..]	{}
+0004 ( 440)		BINOP1	R1(C)[1..]	<-	R1(CF)[0..], CI:1	{}
+0005 ( 440)		RELOP27	R0(B)[0..1]	<-	R0(CF)[0..], CC:5	{}
+0006 ( 440)		BRANCH		<-	R0(BF)[0..1]	{}
 		==> 6
 		==> 2
 L6: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 405)		CONST	R1(C)[0..0]	<-	CI:0	{}
-0001 ( 403)		LOADG1	R0(C)[0..255]	<-	V(12 'snake1')+0 	{}
-0002 ( 403)		BRANCH		<-	R0(CF)[0..255]	{}
+0000 ( 443)		CONST	R1(C)[0..0]	<-	CI:0	{}
+0001 ( 441)		LOADG1	R0(C)[0..255]	<-	V(12 'snake1')+0 	{}
+0002 ( 441)		BRANCH		<-	R0(CF)[0..255]	{}
 		==> 2
 		==> 9
 L9: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 404)		STOREC1		<-	V(4 '')+0 , CC:1	{}
-0001 ( 404)		CALLN		<-	V(19 'snake_advance')+0 	{}
-0002 ( 402)		JUMP		<-		{}
+0000 ( 442)		STOREC1		<-	V(4 '')+0 , CC:1	{}
+0001 ( 442)		CALLN		<-	V(19 'snake_advance')+0 	{}
+0002 ( 440)		JUMP		<-		{}
 		==> 2
 --------------------------------------------------------------------
 gfx_init: /home/christian/DataEXT4/Offline/C64/Projects/snake64/gfx.h:43
@@ -207,40 +207,66 @@ L0: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/gfx.c
 0009 ( 278)		CALLN		<-	V(6 'gfx_clr_set_xy')+0 	{}
 000a ( 279)		RET		<-		{}
 --------------------------------------------------------------------
-snake_init: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:307
+snake_init: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:322
 
 L0: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 308)		STOREC1		<-	V(0 '')+0 , CC:1	{}
-0001 ( 308)		CALLN		<-	V(10 'snake_reset')+0 	{}
-0002 ( 309)		STOREG1		<-	V(12 'snake1')+0 , CC:0	{}
-0003 ( 310)		STOREG1		<-	V(12 'snake1')+1 , CC:3	{}
-0004 ( 311)		STOREC1		<-	V(0 '')+0 , CC:1	{}
-0005 ( 311)		STOREC1		<-	V(1 '')+0 , CC:15	{}
-0006 ( 311)		STOREC1		<-	V(2 '')+0 , CC:10	{}
-0007 ( 311)		CALLN		<-	V(11 'snake_add')+0 	{}
-0008 ( 312)		STOREC1		<-	V(0 '')+0 , CC:1	{}
-0009 ( 312)		STOREC1		<-	V(1 '')+0 , CC:14	{}
-000a ( 312)		STOREC1		<-	V(2 '')+0 , CC:10	{}
-000b ( 312)		CALLN		<-	V(11 'snake_add')+0 	{}
-000c ( 313)		STOREC1		<-	V(0 '')+0 , CC:1	{}
-000d ( 313)		STOREC1		<-	V(1 '')+0 , CC:13	{}
-000e ( 313)		STOREC1		<-	V(2 '')+0 , CC:10	{}
-000f ( 313)		CALLN		<-	V(11 'snake_add')+0 	{}
-0010 ( 314)		STOREC1		<-	V(0 '')+0 , CC:1	{}
-0011 ( 314)		STOREC1		<-	V(1 '')+0 , CC:12	{}
-0012 ( 314)		STOREC1		<-	V(2 '')+0 , CC:10	{}
-0013 ( 314)		CALLN		<-	V(11 'snake_add')+0 	{}
-0014 ( 315)		STOREC1		<-	V(0 '')+0 , CC:1	{}
-0015 ( 315)		STOREC1		<-	V(1 '')+0 , CC:11	{}
-0016 ( 315)		STOREC1		<-	V(2 '')+0 , CC:10	{}
-0017 ( 315)		CALLN		<-	V(11 'snake_add')+0 	{}
-0018 ( 316)		STOREC1		<-	V(0 '')+0 , CC:1	{}
-0019 ( 316)		STOREC1		<-	V(1 '')+0 , CC:10	{}
-001a ( 316)		STOREC1		<-	V(2 '')+0 , CC:10	{}
-001b ( 316)		CALLN		<-	V(11 'snake_add')+0 	{}
-001c ( 317)		STOREC1		<-	V(0 '')+0 , CC:2	{}
-001d ( 317)		CALLN		<-	V(10 'snake_reset')+0 	{}
-001e ( 318)		RET		<-		{}
+0000 ( 323)		STOREC1		<-	V(0 '')+0 , CC:1	{}
+0001 ( 323)		CALLN		<-	V(10 'snake_reset')+0 	{}
+0002 ( 324)		STOREG1		<-	V(12 'snake1')+0 , CC:0	{}
+0003 ( 325)		STOREG1		<-	V(12 'snake1')+1 , CC:3	{}
+0004 ( 326)		STOREC1		<-	V(0 '')+0 , CC:1	{}
+0005 ( 326)		STOREC1		<-	V(1 '')+0 , CC:18	{}
+0006 ( 326)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+0007 ( 326)		CALLN		<-	V(11 'snake_add')+0 	{}
+0008 ( 327)		STOREC1		<-	V(0 '')+0 , CC:1	{}
+0009 ( 327)		STOREC1		<-	V(1 '')+0 , CC:17	{}
+000a ( 327)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+000b ( 327)		CALLN		<-	V(11 'snake_add')+0 	{}
+000c ( 328)		STOREC1		<-	V(0 '')+0 , CC:1	{}
+000d ( 328)		STOREC1		<-	V(1 '')+0 , CC:16	{}
+000e ( 328)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+000f ( 328)		CALLN		<-	V(11 'snake_add')+0 	{}
+0010 ( 329)		STOREC1		<-	V(0 '')+0 , CC:1	{}
+0011 ( 329)		STOREC1		<-	V(1 '')+0 , CC:15	{}
+0012 ( 329)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+0013 ( 329)		CALLN		<-	V(11 'snake_add')+0 	{}
+0014 ( 330)		STOREC1		<-	V(0 '')+0 , CC:1	{}
+0015 ( 330)		STOREC1		<-	V(1 '')+0 , CC:14	{}
+0016 ( 330)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+0017 ( 330)		CALLN		<-	V(11 'snake_add')+0 	{}
+0018 ( 331)		STOREC1		<-	V(0 '')+0 , CC:1	{}
+0019 ( 331)		STOREC1		<-	V(1 '')+0 , CC:13	{}
+001a ( 331)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+001b ( 331)		CALLN		<-	V(11 'snake_add')+0 	{}
+001c ( 332)		STOREC1		<-	V(0 '')+0 , CC:2	{}
+001d ( 332)		CALLN		<-	V(10 'snake_reset')+0 	{}
+001e ( 333)		STOREG1		<-	V(13 'snake2')+0 , CC:0	{}
+001f ( 334)		STOREG1		<-	V(13 'snake2')+1 , CC:1	{}
+0020 ( 335)		STOREC1		<-	V(0 '')+0 , CC:2	{}
+0021 ( 335)		STOREC1		<-	V(1 '')+0 , CC:22	{}
+0022 ( 335)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+0023 ( 335)		CALLN		<-	V(11 'snake_add')+0 	{}
+0024 ( 336)		STOREC1		<-	V(0 '')+0 , CC:2	{}
+0025 ( 336)		STOREC1		<-	V(1 '')+0 , CC:23	{}
+0026 ( 336)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+0027 ( 336)		CALLN		<-	V(11 'snake_add')+0 	{}
+0028 ( 337)		STOREC1		<-	V(0 '')+0 , CC:2	{}
+0029 ( 337)		STOREC1		<-	V(1 '')+0 , CC:24	{}
+002a ( 337)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+002b ( 337)		CALLN		<-	V(11 'snake_add')+0 	{}
+002c ( 338)		STOREC1		<-	V(0 '')+0 , CC:2	{}
+002d ( 338)		STOREC1		<-	V(1 '')+0 , CC:25	{}
+002e ( 338)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+002f ( 338)		CALLN		<-	V(11 'snake_add')+0 	{}
+0030 ( 339)		STOREC1		<-	V(0 '')+0 , CC:2	{}
+0031 ( 339)		STOREC1		<-	V(1 '')+0 , CC:26	{}
+0032 ( 339)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+0033 ( 339)		CALLN		<-	V(11 'snake_add')+0 	{}
+0034 ( 340)		STOREC1		<-	V(0 '')+0 , CC:2	{}
+0035 ( 340)		STOREC1		<-	V(1 '')+0 , CC:27	{}
+0036 ( 340)		STOREC1		<-	V(2 '')+0 , CC:10	{}
+0037 ( 340)		CALLN		<-	V(11 'snake_add')+0 	{}
+0038 ( 341)		RET		<-		{}
 --------------------------------------------------------------------
 snake_reset: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:77
 $00 R0(I), $00 R1(B), 
@@ -664,89 +690,161 @@ L0: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake
 0002 ( 138)		BINOP1	R0(I)[1..256]	<-	R0(IF)[0..255], CI:1	{S}
 0003 ( 138)		RETV		<-	R0(CF)[1..256]	{}
 --------------------------------------------------------------------
-wait_for_frame: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:346
+wait_for_frame: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:369
 
 L0: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 348)		JSR		<-	V(-1 '')+0 	{V}
-0001 ( 356)		RET		<-		{}
+0000 ( 371)		JSR		<-	V(-1 '')+0 	{V}
+0001 ( 379)		RET		<-		{}
 --------------------------------------------------------------------
-snake_control: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:364
+snake_control: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:387
 $00 R0(I), $00 R1(I), 
 L0: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 365)		LOADZ1	R0(C)[0..255]	<-	V(0 '')+0 	{S}
-0001 ( 365)		RELOP19	R0(B)[0..1]	<-	R0(CF)[0..255], CC:1	{S}
-0002 ( 365)		BRANCH		<-	R0(BF)[0..1]	{}
+0000 ( 388)		LOADZ1	R0(C)[0..255]	<-	V(0 '')+0 	{S}
+0001 ( 388)		RELOP19	R1(B)[0..1]	<-	R0(C)[0..255], CC:1	{S}
+0002 ( 388)		BRANCH		<-	R1(BF)[0..1]	{}
 		==> 1
 		==> 3
 L1: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 366)		LOADA1	R0(C)[0..255]	<-	V(-1 '')+56320 	{V}
-0001 ( 366)		CONV37	R0(I)[0..255]	<-	R0(CF)[0..255]	{}
-0002 ( 366)		UNOP15	R0(I)	<-	R0(IF)[0..255]	{}
-0003 ( 367)		CONV37	R0(I)[0..255]	<-	R0(CF)	{}
-0004 ( 367)		BINOP9	R1(I)[0..4]	<-	R0(I)[0..255], CI:4	{}
-0005 ( 367)		RELOP20	R1(B)[0..1]	<-	R1(IF)[0..4], CI:0	{}
-0006 ( 367)		BRANCH		<-	R1(BF)[0..1]	{}
+0000 ( 389)		LOADA1	R0(C)[0..255]	<-	V(-1 '')+56320 	{V}
+0001 ( 389)		CONV37	R0(I)[0..255]	<-	R0(CF)[0..255]	{}
+0002 ( 389)		UNOP15	R0(I)	<-	R0(IF)[0..255]	{}
+0003 ( 390)		CONV37	R0(I)[0..255]	<-	R0(CF)	{}
+0004 ( 390)		BINOP9	R1(I)[0..4]	<-	R0(I)[0..255], CI:4	{}
+0005 ( 390)		RELOP20	R1(B)[0..1]	<-	R1(IF)[0..4], CI:0	{}
+0006 ( 390)		BRANCH		<-	R1(BF)[0..1]	{}
 		==> 7
-		==> 25
+		==> 46
 L7: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 367)		LOADG1	R1(C)[0..255]	<-	V(12 'snake1')+1 	{}
-0001 ( 367)		RELOP20	R1(B)[0..1]	<-	R1(CF)[0..255], CC:1	{}
-0002 ( 367)		BRANCH		<-	R1(BF)[0..1]	{}
+0000 ( 390)		LOADG1	R1(C)[0..255]	<-	V(12 'snake1')+1 	{}
+0001 ( 390)		RELOP20	R1(B)[0..1]	<-	R1(CF)[0..255], CC:1	{}
+0002 ( 390)		BRANCH		<-	R1(BF)[0..1]	{}
 		==> 4
-		==> 25
+		==> 46
 L4: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 368)		STOREG1		<-	V(12 'snake1')+1 , CC:3	{}
-0001 ( 369)		JUMP		<-		{}
-		==> 25
-L25: <= D-1: (3)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 369)		BINOP9	R1(I)[0..8]	<-	R0(I)[0..255], CI:8	{}
-0001 ( 369)		RELOP20	R1(B)[0..1]	<-	R1(IF)[0..8], CI:0	{}
-0002 ( 369)		BRANCH		<-	R1(BF)[0..1]	{}
+0000 ( 391)		STOREG1		<-	V(12 'snake1')+1 , CC:3	{}
+0001 ( 392)		JUMP		<-		{}
+		==> 46
+L46: <= D-1: (3)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 392)		BINOP9	R1(I)[0..8]	<-	R0(I)[0..255], CI:8	{}
+0001 ( 392)		RELOP20	R1(B)[0..1]	<-	R1(IF)[0..8], CI:0	{}
+0002 ( 392)		BRANCH		<-	R1(BF)[0..1]	{}
 		==> 11
-		==> 27
+		==> 48
 L11: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 369)		LOADG1	R1(C)[0..255]	<-	V(12 'snake1')+1 	{}
-0001 ( 369)		RELOP20	R1(B)[0..1]	<-	R1(CF)[0..255], CC:3	{}
-0002 ( 369)		BRANCH		<-	R1(BF)[0..1]	{}
+0000 ( 392)		LOADG1	R1(C)[0..255]	<-	V(12 'snake1')+1 	{}
+0001 ( 392)		RELOP20	R1(B)[0..1]	<-	R1(CF)[0..255], CC:3	{}
+0002 ( 392)		BRANCH		<-	R1(BF)[0..1]	{}
 		==> 8
-		==> 27
+		==> 48
 L8: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 370)		STOREG1		<-	V(12 'snake1')+1 , CC:1	{}
-0001 ( 371)		JUMP		<-		{}
-		==> 27
-L27: <= D-1: (3)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 371)		BINOP9	R1(I)[0..1]	<-	R0(I)[0..255], CI:1	{}
-0001 ( 371)		RELOP20	R1(B)[0..1]	<-	R1(IF)[0..1], CI:0	{}
-0002 ( 371)		BRANCH		<-	R1(BF)[0..1]	{}
+0000 ( 393)		STOREG1		<-	V(12 'snake1')+1 , CC:1	{}
+0001 ( 394)		JUMP		<-		{}
+		==> 48
+L48: <= D-1: (3)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 394)		BINOP9	R1(I)[0..1]	<-	R0(I)[0..255], CI:1	{}
+0001 ( 394)		RELOP20	R1(B)[0..1]	<-	R1(IF)[0..1], CI:0	{}
+0002 ( 394)		BRANCH		<-	R1(BF)[0..1]	{}
 		==> 15
 		==> 14
 L15: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 371)		LOADG1	R1(C)[0..255]	<-	V(12 'snake1')+1 	{}
-0001 ( 371)		RELOP20	R1(B)[0..1]	<-	R1(CF)[0..255], CC:2	{}
-0002 ( 371)		BRANCH		<-	R1(BF)[0..1]	{}
+0000 ( 394)		LOADG1	R1(C)[0..255]	<-	V(12 'snake1')+1 	{}
+0001 ( 394)		RELOP20	R1(B)[0..1]	<-	R1(CF)[0..255], CC:2	{}
+0002 ( 394)		BRANCH		<-	R1(BF)[0..1]	{}
 		==> 12
 		==> 14
 L12: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 372)		STOREG1		<-	V(12 'snake1')+1 , CC:0	{}
-0001 ( 373)		JUMP		<-		{}
-		==> 3
-L3: <= D-1: (5)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 379)		RET		<-		{}
+0000 ( 395)		STOREG1		<-	V(12 'snake1')+1 , CC:0	{}
+0001 ( 396)		JUMP		<-		{}
+		==> 18
+L18: <= D-1: (9)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 400)		RET		<-		{}
 L14: <= D-1: (2)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 373)		BINOP9	R0(I)[0..2]	<-	R0(IF)[0..255], CI:2	{}
-0001 ( 373)		RELOP20	R0(B)[0..1]	<-	R0(IF)[0..2], CI:0	{}
-0002 ( 373)		BRANCH		<-	R0(BF)[0..1]	{}
+0000 ( 396)		BINOP9	R0(I)[0..2]	<-	R0(IF)[0..255], CI:2	{}
+0001 ( 396)		RELOP20	R0(B)[0..1]	<-	R0(IF)[0..2], CI:0	{}
+0002 ( 396)		BRANCH		<-	R0(BF)[0..1]	{}
 		==> 19
-		==> 3
+		==> 18
 L19: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 373)		LOADG1	R0(C)[0..255]	<-	V(12 'snake1')+1 	{}
-0001 ( 373)		BRANCH		<-	R0(CF)[0..255]	{}
+0000 ( 396)		LOADG1	R0(C)[0..255]	<-	V(12 'snake1')+1 	{}
+0001 ( 396)		BRANCH		<-	R0(CF)[0..255]	{}
 		==> 16
-		==> 3
+		==> 18
 L16: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 374)		STOREG1		<-	V(12 'snake1')+1 , CC:2	{}
-0001 ( 373)		JUMP		<-		{}
-		==> 3
+0000 ( 397)		STOREG1		<-	V(12 'snake1')+1 , CC:2	{}
+0001 ( 396)		JUMP		<-		{}
+		==> 18
+L3: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 402)		RELOP19	R0(B)[0..1]	<-	R0(CF)[0..255], CC:2	{S}
+0001 ( 402)		BRANCH		<-	R0(BF)[0..1]	{}
+		==> 21
+		==> 18
+L21: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 403)		LOADA1	R0(C)[0..255]	<-	V(-1 '')+56321 	{V}
+0001 ( 403)		CONV37	R0(I)[0..255]	<-	R0(CF)[0..255]	{}
+0002 ( 403)		UNOP15	R0(I)	<-	R0(IF)[0..255]	{}
+0003 ( 404)		CONV37	R0(I)[0..255]	<-	R0(CF)	{}
+0004 ( 404)		BINOP9	R1(I)[0..4]	<-	R0(I)[0..255], CI:4	{}
+0005 ( 404)		RELOP20	R1(B)[0..1]	<-	R1(IF)[0..4], CI:0	{}
+0006 ( 404)		BRANCH		<-	R1(BF)[0..1]	{}
+		==> 27
+		==> 56
+L27: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 404)		LOADG1	R1(C)[0..255]	<-	V(13 'snake2')+1 	{}
+0001 ( 404)		RELOP20	R1(B)[0..1]	<-	R1(CF)[0..255], CC:1	{}
+0002 ( 404)		BRANCH		<-	R1(BF)[0..1]	{}
+		==> 24
+		==> 56
+L24: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 405)		STOREG1		<-	V(13 'snake2')+1 , CC:3	{}
+0001 ( 406)		JUMP		<-		{}
+		==> 56
+L56: <= D-1: (3)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 406)		BINOP9	R1(I)[0..8]	<-	R0(I)[0..255], CI:8	{}
+0001 ( 406)		RELOP20	R1(B)[0..1]	<-	R1(IF)[0..8], CI:0	{}
+0002 ( 406)		BRANCH		<-	R1(BF)[0..1]	{}
+		==> 31
+		==> 58
+L31: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 406)		LOADG1	R1(C)[0..255]	<-	V(13 'snake2')+1 	{}
+0001 ( 406)		RELOP20	R1(B)[0..1]	<-	R1(CF)[0..255], CC:3	{}
+0002 ( 406)		BRANCH		<-	R1(BF)[0..1]	{}
+		==> 28
+		==> 58
+L28: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 407)		STOREG1		<-	V(13 'snake2')+1 , CC:1	{}
+0001 ( 408)		JUMP		<-		{}
+		==> 58
+L58: <= D-1: (3)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 408)		BINOP9	R1(I)[0..1]	<-	R0(I)[0..255], CI:1	{}
+0001 ( 408)		RELOP20	R1(B)[0..1]	<-	R1(IF)[0..1], CI:0	{}
+0002 ( 408)		BRANCH		<-	R1(BF)[0..1]	{}
+		==> 35
+		==> 34
+L35: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 408)		LOADG1	R1(C)[0..255]	<-	V(13 'snake2')+1 	{}
+0001 ( 408)		RELOP20	R1(B)[0..1]	<-	R1(CF)[0..255], CC:2	{}
+0002 ( 408)		BRANCH		<-	R1(BF)[0..1]	{}
+		==> 32
+		==> 34
+L32: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 409)		STOREG1		<-	V(13 'snake2')+1 , CC:0	{}
+0001 ( 410)		JUMP		<-		{}
+		==> 18
+L34: <= D-1: (2)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 410)		BINOP9	R0(I)[0..2]	<-	R0(IF)[0..255], CI:2	{}
+0001 ( 410)		RELOP20	R0(B)[0..1]	<-	R0(IF)[0..2], CI:0	{}
+0002 ( 410)		BRANCH		<-	R0(BF)[0..1]	{}
+		==> 39
+		==> 18
+L39: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 410)		LOADG1	R0(C)[0..255]	<-	V(13 'snake2')+1 	{}
+0001 ( 410)		BRANCH		<-	R0(CF)[0..255]	{}
+		==> 36
+		==> 18
+L36: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 411)		STOREG1		<-	V(13 'snake2')+1 , CC:2	{}
+0001 ( 410)		JUMP		<-		{}
+		==> 18
 --------------------------------------------------------------------
 snake_advance: /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c:247
 $00 R0(I), $03 R1(I), $00 R2(I), $04 R3(P), $00 R4(C), $05 R5(C), 
@@ -772,16 +870,16 @@ L6: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake
 0004 ( 252)		CONV37	R1(I)[0..255]	<-	R1(CF)[0..255]	{}
 0005 ( 252)		LOADG1	R2(C)[0..3]	<-	V(12 'snake1')+1 	{}
 0006 ( 252)		CONV37	R2(I)[0..3]	<-	R2(CF)[0..3]	{}
-0007 ( 252)		LEAG	R3(P)[0..3]	<-	V(21 'ddx')+0 , R2(I)[0..3]	{}
-0008 ( 252)		LOADI1	R3(C)[-1..1]	<-	R3(PF)+0 {V(21 'ddx')} [0..3]	{}
+0007 ( 252)		LEAG	R3(P)[0..3]	<-	V(22 'ddx')+0 , R2(I)[0..3]	{}
+0008 ( 252)		LOADI1	R3(C)[-1..1]	<-	R3(PF)+0 {V(22 'ddx')} [0..3]	{}
 0009 ( 252)		CONV40	R3(I)[-1..1]	<-	R3(CF)[-1..1]	{}
 000a ( 252)		BINOP1	R3(I)[-1..256]	<-	R3(IF)[-1..1], R1(IF)[0..255]	{}
 000b ( 254)		STOREC1		<-	V(0 '')+0 , R3(C)[-1..256]	{}
 000c ( 253)		LEAI	R0(P)+0 {V(12 'snake1')} [258..513]	<-	R0(PF)+0 {V(12 'snake1')} [2..257], CI:256	{}
 000d ( 253)		LOADI1	R0(C)[0..255]	<-	R0(PF)+0 {V(12 'snake1')} [258..513]	{}
 000e ( 253)		CONV37	R0(I)[0..255]	<-	R0(CF)[0..255]	{}
-000f ( 253)		LEAG	R1(P)[0..3]	<-	V(22 'ddy')+0 , R2(IF)[0..3]	{}
-0010 ( 253)		LOADI1	R1(C)[-1..1]	<-	R1(PF)+0 {V(22 'ddy')} [0..3]	{}
+000f ( 253)		LEAG	R1(P)[0..3]	<-	V(23 'ddy')+0 , R2(IF)[0..3]	{}
+0010 ( 253)		LOADI1	R1(C)[-1..1]	<-	R1(PF)+0 {V(23 'ddy')} [0..3]	{}
 0011 ( 253)		CONV40	R1(I)[-1..1]	<-	R1(CF)[-1..1]	{}
 0012 ( 253)		BINOP1	R1(I)[-1..256]	<-	R1(IF)[-1..1], R0(IF)[0..255]	{}
 0013 ( 254)		STOREC1		<-	V(1 '')+0 , R1(C)[-1..256]	{}
@@ -830,11 +928,11 @@ L22: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snak
 0004 ( 283)		JUMP		<-		{}
 		==> 28
 L28: <= D-1: (5)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 302)		STOREC1		<-	V(3 '')+0 , R4(C)[0..255]	{}
-0001 ( 302)		CALLN		<-	V(12 'snake_draw_head')+0 	{}
-0002 ( 303)		STOREC1		<-	V(3 '')+0 , R4(CF)[0..255]	{}
-0003 ( 303)		CALLN		<-	V(15 'snake_draw_tail')+0 	{}
-0004 ( 304)		RET		<-		{}
+0000 ( 317)		STOREC1		<-	V(3 '')+0 , R4(C)[0..255]	{}
+0001 ( 317)		CALLN		<-	V(12 'snake_draw_head')+0 	{}
+0002 ( 318)		STOREC1		<-	V(3 '')+0 , R4(CF)[0..255]	{}
+0003 ( 318)		CALLN		<-	V(15 'snake_draw_tail')+0 	{}
+0004 ( 319)		RET		<-		{}
 L23: <= D-1: (2)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
 0000 ( 280)		LOADG1	R0(C)[0..255]	<-	V(12 'snake1')+515 	{}
 0001 ( 280)		BINOP1	R0(C)	<-	R0(CF)[0..255], CI:1	{}
@@ -855,8 +953,11 @@ L14: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snak
 		==> 18
 L17: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
 0000 ( 262)		STOREG1		<-	V(12 'snake1')+0 , CC:2	{}
-0001 ( 263)		CALLN		<-	V(21 'snake_set_dead_color')+0 	{}
-0002 ( 261)		JUMP		<-		{}
+0001 ( 261)		JUMP		<-		{}
+		==> 62
+L62: <= D-1: (2)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 297)		CALLN		<-	V(21 'snake_set_dead_color')+0 	{}
+0001 ( 295)		JUMP		<-		{}
 		==> 4
 L18: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
 0000 ( 265)		BINOP1	R0(C)[5..254]	<-	R0(CF)[6..255], CI:-1	{}
@@ -864,8 +965,11 @@ L18: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snak
 0002 ( 266)		LOADG1	R0(C)[0..255]	<-	V(12 'snake1')+515 	{}
 0003 ( 266)		BINOP1	R0(C)	<-	R0(CF)[0..255], CI:1	{}
 0004 ( 266)		STOREG1		<-	V(12 'snake1')+515 , R0(CF)	{}
-0005 ( 267)		CALLN		<-	V(15 'snake_draw_tail')+0 	{}
-0006 ( 261)		JUMP		<-		{}
+0005 ( 261)		JUMP		<-		{}
+		==> 63
+L63: <= D-1: (2)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 301)		CALLN		<-	V(15 'snake_draw_tail')+0 	{}
+0001 ( 295)		JUMP		<-		{}
 		==> 4
 L3: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
 0000 ( 283)		RELOP19	R0(B)[0..1]	<-	R4(C)[0..255], CC:2	{S}
@@ -886,56 +990,93 @@ L31: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snak
 0004 ( 286)		CONV37	R1(I)[0..255]	<-	R1(CF)[0..255]	{}
 0005 ( 286)		LOADG1	R2(C)[0..3]	<-	V(13 'snake2')+1 	{}
 0006 ( 286)		CONV37	R2(I)[0..3]	<-	R2(CF)[0..3]	{}
-0007 ( 286)		LEAG	R3(P)[0..3]	<-	V(21 'ddx')+0 , R2(I)[0..3]	{}
-0008 ( 286)		LOADI1	R3(C)[-1..1]	<-	R3(PF)+0 {V(21 'ddx')} [0..3]	{}
+0007 ( 286)		LEAG	R3(P)[0..3]	<-	V(22 'ddx')+0 , R2(I)[0..3]	{}
+0008 ( 286)		LOADI1	R3(C)[-1..1]	<-	R3(PF)+0 {V(22 'ddx')} [0..3]	{}
 0009 ( 286)		CONV40	R3(I)[-1..1]	<-	R3(CF)[-1..1]	{}
 000a ( 286)		BINOP1	R3(I)[-1..256]	<-	R3(IF)[-1..1], R1(IF)[0..255]	{}
 000b ( 288)		STOREC1		<-	V(0 '')+0 , R3(C)[-1..256]	{}
 000c ( 287)		LEAI	R0(P)+0 {V(13 'snake2')} [258..513]	<-	R0(PF)+0 {V(13 'snake2')} [2..257], CI:256	{}
 000d ( 287)		LOADI1	R0(C)[0..255]	<-	R0(PF)+0 {V(13 'snake2')} [258..513]	{}
 000e ( 287)		CONV37	R0(I)[0..255]	<-	R0(CF)[0..255]	{}
-000f ( 287)		LEAG	R1(P)[0..3]	<-	V(22 'ddy')+0 , R2(IF)[0..3]	{}
-0010 ( 287)		LOADI1	R1(C)[-1..1]	<-	R1(PF)+0 {V(22 'ddy')} [0..3]	{}
+000f ( 287)		LEAG	R1(P)[0..3]	<-	V(23 'ddy')+0 , R2(IF)[0..3]	{}
+0010 ( 287)		LOADI1	R1(C)[-1..1]	<-	R1(PF)+0 {V(23 'ddy')} [0..3]	{}
 0011 ( 287)		CONV40	R1(I)[-1..1]	<-	R1(CF)[-1..1]	{}
 0012 ( 287)		BINOP1	R1(I)[-1..256]	<-	R1(IF)[-1..1], R0(IF)[0..255]	{}
 0013 ( 288)		STOREC1		<-	V(1 '')+0 , R1(C)[-1..256]	{}
 0014 ( 288)		CALLN	R0(C)	<-	V(20 'gfx_scr_get_xy')+0 	{}
-0015 ( 289)		RELOP20	R0(B)[0..1]	<-	R0(CF), CC:32	{}
-0016 ( 289)		BRANCH		<-	R0(BF)[0..1]	{}
-		==> 4
+0015 ( 289)		RELOP20	R2(B)[0..1]	<-	R0(C), CC:32	{}
+0016 ( 289)		BRANCH		<-	R2(BF)[0..1]	{}
+		==> 33
 		==> 35
-L35: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 292)		BINOP1	R0(C)	<-	R5(CF)[0..255], CI:1	{}
-0001 ( 292)		STOREG1		<-	V(13 'snake2')+514 , R0(C)	{}
-0002 ( 293)		CONV37	R0(I)[0..255]	<-	R0(CF)	{}
-0003 ( 293)		LEAG	R0(P)[2..257]	<-	V(13 'snake2')+2 , R0(IF)[0..255]	{}
-0004 ( 293)		STOREI1		<-	R0(P)+0 {V(13 'snake2')} [2..257], R3(CF)[-1..256]	{}
-0005 ( 294)		LEAI	R0(P)+0 {V(13 'snake2')} [258..513]	<-	R0(PF)+0 {V(13 'snake2')} [2..257], CI:256	{}
-0006 ( 294)		STOREI1		<-	R0(PF)+0 {V(13 'snake2')} [258..513], R1(CF)[-1..256]	{}
-0007 ( 295)		LOADG1	R0(C)[0..255]	<-	V(13 'snake2')+517 	{}
-0008 ( 295)		RELOP27	R1(B)[0..1]	<-	R0(C)[0..255], CC:0	{}
-0009 ( 295)		BRANCH		<-	R1(BF)[0..1]	{}
-		==> 40
-		==> 38
-L40: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 295)		LOADG1	R1(C)[0..255]	<-	V(13 'snake2')+516 	{}
-0001 ( 295)		RELOP28	R2(B)[0..1]	<-	R1(C)[0..255], CC:240	{}
-0002 ( 295)		BRANCH		<-	R2(BF)[0..1]	{}
+L33: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 290)		RELOP19	R2(B)[0..1]	<-	R0(C), CC:83	{}
+0001 ( 290)		BRANCH		<-	R2(BF)[0..1]	{}
+		==> 36
 		==> 37
-		==> 38
+L36: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 291)		STOREG1		<-	V(13 'snake2')+517 , CC:2	{}
+0001 ( 292)		STOREC1		<-	V(0 '')+0 , R3(C)[-1..256]	{}
+0002 ( 292)		STOREC1		<-	V(1 '')+0 , R1(C)[-1..256]	{}
+0003 ( 292)		STOREC1		<-	V(2 '')+0 , CC:32	{}
+0004 ( 292)		CALLN		<-	V(5 'gfx_scr_set_xy')+0 	{}
+0005 ( 290)		JUMP		<-		{}
+		==> 35
+L35: <= D-1: (2)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 307)		BINOP1	R0(C)	<-	R5(CF)[0..255], CI:1	{}
+0001 ( 307)		STOREG1		<-	V(13 'snake2')+514 , R0(C)	{}
+0002 ( 308)		CONV37	R0(I)[0..255]	<-	R0(CF)	{}
+0003 ( 308)		LEAG	R0(P)[2..257]	<-	V(13 'snake2')+2 , R0(IF)[0..255]	{}
+0004 ( 308)		STOREI1		<-	R0(P)+0 {V(13 'snake2')} [2..257], R3(CF)[-1..256]	{}
+0005 ( 309)		LEAI	R0(P)+0 {V(13 'snake2')} [258..513]	<-	R0(PF)+0 {V(13 'snake2')} [2..257], CI:256	{}
+0006 ( 309)		STOREI1		<-	R0(PF)+0 {V(13 'snake2')} [258..513], R1(CF)[-1..256]	{}
+0007 ( 310)		LOADG1	R0(C)[0..255]	<-	V(13 'snake2')+517 	{}
+0008 ( 310)		RELOP27	R1(B)[0..1]	<-	R0(C)[0..255], CC:0	{}
+0009 ( 310)		BRANCH		<-	R1(BF)[0..1]	{}
+		==> 50
+		==> 48
+L50: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 310)		LOADG1	R1(C)[0..255]	<-	V(13 'snake2')+516 	{}
+0001 ( 310)		RELOP28	R2(B)[0..1]	<-	R1(C)[0..255], CC:240	{}
+0002 ( 310)		BRANCH		<-	R2(BF)[0..1]	{}
+		==> 47
+		==> 48
+L47: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 311)		BINOP1	R0(C)[0..254]	<-	R0(CF)[1..255], CI:-1	{}
+0001 ( 311)		STOREG1		<-	V(13 'snake2')+517 , R0(CF)[0..254]	{}
+0002 ( 312)		BINOP1	R1(C)[1..240]	<-	R1(CF)[0..239], CI:1	{}
+0003 ( 312)		STOREG1		<-	V(13 'snake2')+516 , R1(CF)[1..240]	{}
+0004 ( 310)		JUMP		<-		{}
+		==> 28
+L48: <= D-1: (2)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 314)		LOADG1	R0(C)[0..255]	<-	V(13 'snake2')+515 	{}
+0001 ( 314)		BINOP1	R0(C)	<-	R0(CF)[0..255], CI:1	{}
+0002 ( 314)		STOREG1		<-	V(13 'snake2')+515 , R0(CF)	{}
+0003 ( 310)		JUMP		<-		{}
+		==> 28
 L37: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 296)		BINOP1	R0(C)[0..254]	<-	R0(CF)[1..255], CI:-1	{}
-0001 ( 296)		STOREG1		<-	V(13 'snake2')+517 , R0(CF)[0..254]	{}
-0002 ( 297)		BINOP1	R1(C)[1..240]	<-	R1(CF)[0..239], CI:1	{}
-0003 ( 297)		STOREG1		<-	V(13 'snake2')+516 , R1(CF)[1..240]	{}
-0004 ( 295)		JUMP		<-		{}
-		==> 28
-L38: <= D-1: (2)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
-0000 ( 299)		LOADG1	R0(C)[0..255]	<-	V(13 'snake2')+515 	{}
-0001 ( 299)		BINOP1	R0(C)	<-	R0(CF)[0..255], CI:1	{}
-0002 ( 299)		STOREG1		<-	V(13 'snake2')+515 , R0(CF)	{}
-0003 ( 295)		JUMP		<-		{}
-		==> 28
+0000 ( 294)		RELOP19	R0(B)[0..1]	<-	R0(CF), CC:86	{}
+0001 ( 294)		BRANCH		<-	R0(BF)[0..1]	{}
+		==> 39
+		==> 4
+L39: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 297)		STOREC1		<-	V(3 '')+0 , CC:2	{}
+0001 ( 295)		LOADG1	R0(C)[0..255]	<-	V(13 'snake2')+516 	{}
+0002 ( 295)		RELOP26	R1(B)[0..1]	<-	R0(C)[0..255], CC:5	{}
+0003 ( 295)		BRANCH		<-	R1(BF)[0..1]	{}
+		==> 42
+		==> 43
+L42: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 296)		STOREG1		<-	V(13 'snake2')+0 , CC:2	{}
+0001 ( 295)		JUMP		<-		{}
+		==> 62
+L43: <= D-1: (1)  P-1 /home/christian/DataEXT4/Offline/C64/Projects/snake64/snake.c
+0000 ( 299)		BINOP1	R0(C)[5..254]	<-	R0(CF)[6..255], CI:-1	{}
+0001 ( 299)		STOREG1		<-	V(13 'snake2')+516 , R0(CF)[5..254]	{}
+0002 ( 300)		LOADG1	R0(C)[0..255]	<-	V(13 'snake2')+515 	{}
+0003 ( 300)		BINOP1	R0(C)	<-	R0(CF)[0..255], CI:1	{}
+0004 ( 300)		STOREG1		<-	V(13 'snake2')+515 , R0(CF)	{}
+0005 ( 295)		JUMP		<-		{}
+		==> 63
 --------------------------------------------------------------------
 gfx_scr_get_xy: /home/christian/DataEXT4/Offline/C64/Projects/snake64/gfx.h:34
 
