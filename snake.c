@@ -431,15 +431,21 @@ int main(void) {
 	snake_draw_head(1);
 	snake_draw_body(1);
 	snake_draw_tail(1);
+	snake_draw_head(2);
+	snake_draw_body(2);
+	snake_draw_tail(2);
 
 	uint8_t advance_counter = 0;
 	for(;;) {
 		wait_for_frame();
 		snake_control(1);
+		snake_control(2);
 
 		if(advance_counter++ > 5) {
-			if (snake1.status == SNAKE_ACTIVE)
+			if (snake1.status == SNAKE_ACTIVE) {
 				snake_advance(1);
+				snake_advance(2);
+			}
 			advance_counter = 0;
 		}
 	}

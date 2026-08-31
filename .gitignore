@@ -1,4 +1,5 @@
-archive\*
-.claude\*
+archive/*
+.claude/*
 .*
 !.gitignore
+snake64.*
