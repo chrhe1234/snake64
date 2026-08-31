@@ -1,0 +1,127 @@
+sections
+0a00 - 1519 : DATA, code
+1519 - 1588 : DATA, data
+2800 - 2c0c : BSS, bss
+2c10 - 9000 : HEAP, heap
+9000 - a000 : STACK, stack
+00f7 - 00f7 : ZEROPAGE, zeropage
+10000 - 10000 : DATA, sprites
+2000 - 2800 : DATA, charset
+0801 - 0853 : DATA, startup
+a000 - a000 : SSTACK, sstack
+a000 - a000 : SSTACK, gfx_scr_set@stack
+a000 - a000 : SSTACK, gfx_clr_set@stack
+a000 - a000 : SSTACK, gfx_init@stack
+a000 - a000 : SSTACK, gfx_scr_set_xy@stack
+a000 - a000 : SSTACK, gfx_clr_set_xy@stack
+a000 - a000 : SSTACK, gfx_draw_frame@stack
+a000 - a000 : SSTACK, gfx_draw_food@stack
+a000 - a000 : SSTACK, gfx_draw_hazard@stack
+a000 - a000 : SSTACK, snake_reset@stack
+a000 - a000 : SSTACK, snake_add@stack
+a000 - a000 : SSTACK, snake_init@stack
+a000 - a000 : SSTACK, dec8@stack
+a000 - a000 : SSTACK, snake_draw_head@stack
+a000 - a000 : SSTACK, snake_draw_body@stack
+a000 - a000 : SSTACK, inc8@stack
+a000 - a000 : SSTACK, snake_draw_tail@stack
+a000 - a000 : SSTACK, wait_for_frame@stack
+a000 - a000 : SSTACK, snake_control@stack
+a000 - a000 : SSTACK, gfx_scr_get_xy@stack
+a000 - a000 : SSTACK, snake_set_dead_color@stack
+a000 - a000 : SSTACK, snake_advance@stack
+a000 - a000 : SSTACK, gfx_reset@stack
+a000 - a000 : SSTACK, main@stack
+
+regions
+0a00 - 0c00 : 0c00, 0200, lower1
+0c00 - 1000 : 0000, 0000, sprites
+1000 - 2000 : 1588, 0588, lower2
+2000 - 2800 : 2800, 0800, charset
+2800 - 9000 : 0000, 040c, main
+00f7 - 00ff : 0000, 0000, zeropage
+0801 - 0880 : 0853, 0052, startup
+
+objects
+00f7 - 00f7 : ZeroEnd, END:zeropage
+00f7 - 00f7 : ZeroStart, START:zeropage
+0801 - 0853 : startup, NATIVE_CODE:startup
+0a00 - 0a83 : main, NATIVE_CODE:code
+0a83 - 0aa8 : gfx_init, NATIVE_CODE:code
+0aa8 - 0abe : gfx_scr_set, NATIVE_CODE:code
+0abe - 0ad4 : gfx_clr_set, NATIVE_CODE:code
+0ad4 - 0bd5 : gfx_draw_frame, NATIVE_CODE:code
+0bd5 - 0beb : gfx_scr_set_xy, NATIVE_CODE:code
+0beb - 0bef : dec8, NATIVE_CODE:code
+0bef - 0bf3 : inc8, NATIVE_CODE:code
+0bf3 - 0c00 : wait_for_frame, NATIVE_CODE:code
+1000 - 1016 : gfx_clr_set_xy, NATIVE_CODE:code
+1016 - 1034 : gfx_draw_food, NATIVE_CODE:code
+1034 - 1052 : gfx_draw_hazard, NATIVE_CODE:code
+1052 - 108c : snake_init, NATIVE_CODE:code
+108c - 10ec : snake_reset, NATIVE_CODE:code
+10ec - 113c : snake_add, NATIVE_CODE:code
+113c - 11e2 : snake_draw_head, NATIVE_CODE:code
+11e2 - 1262 : snake_draw_body, NATIVE_CODE:code
+1262 - 1369 : snake_draw_tail, NATIVE_CODE:code
+1369 - 13b2 : snake_control, NATIVE_CODE:code
+13b2 - 14a9 : snake_advance, NATIVE_CODE:code
+14a9 - 14c5 : gfx_scr_get_xy, NATIVE_CODE:code
+14c5 - 1519 : snake_set_dead_color, NATIVE_CODE:code
+1519 - 151a : spentry, DATA:data
+151a - 151b : gfx_old_border, DATA:data
+151b - 151c : gfx_old_background, DATA:data
+151c - 1535 : scr_row_low, DATA:data
+1535 - 154e : scr_row_high, DATA:data
+154e - 1567 : clr_row_low, DATA:data
+1567 - 1580 : clr_row_high, DATA:data
+1580 - 1584 : ddx, DATA:data
+1584 - 1588 : ddy, DATA:data
+2000 - 2800 : charset, DATA:charset
+2800 - 2a06 : snake1, DATA:bss
+2800 - 2800 : BSSStart, START:bss
+2a06 - 2c0c : snake2, DATA:bss
+2c0c - 2c0c : BSSEnd, END:bss
+a000 - a000 : StackEnd, END:stack
+
+objects by size
+2000 (0800) : charset, DATA:charset
+2800 (0206) : snake1, DATA:bss
+2a06 (0206) : snake2, DATA:bss
+1262 (0107) : snake_draw_tail, NATIVE_CODE:code
+0ad4 (0101) : gfx_draw_frame, NATIVE_CODE:code
+13b2 (00f7) : snake_advance, NATIVE_CODE:code
+113c (00a6) : snake_draw_head, NATIVE_CODE:code
+0a00 (0083) : main, NATIVE_CODE:code
+11e2 (0080) : snake_draw_body, NATIVE_CODE:code
+108c (0060) : snake_reset, NATIVE_CODE:code
+14c5 (0054) : snake_set_dead_color, NATIVE_CODE:code
+0801 (0052) : startup, NATIVE_CODE:startup
+10ec (0050) : snake_add, NATIVE_CODE:code
+1369 (0049) : snake_control, NATIVE_CODE:code
+1052 (003a) : snake_init, NATIVE_CODE:code
+0a83 (0025) : gfx_init, NATIVE_CODE:code
+1016 (001e) : gfx_draw_food, NATIVE_CODE:code
+1034 (001e) : gfx_draw_hazard, NATIVE_CODE:code
+14a9 (001c) : gfx_scr_get_xy, NATIVE_CODE:code
+151c (0019) : scr_row_low, DATA:data
+1535 (0019) : scr_row_high, DATA:data
+154e (0019) : clr_row_low, DATA:data
+1567 (0019) : clr_row_high, DATA:data
+0aa8 (0016) : gfx_scr_set, NATIVE_CODE:code
+0abe (0016) : gfx_clr_set, NATIVE_CODE:code
+0bd5 (0016) : gfx_scr_set_xy, NATIVE_CODE:code
+1000 (0016) : gfx_clr_set_xy, NATIVE_CODE:code
+0bf3 (000d) : wait_for_frame, NATIVE_CODE:code
+0beb (0004) : dec8, NATIVE_CODE:code
+0bef (0004) : inc8, NATIVE_CODE:code
+1580 (0004) : ddx, DATA:data
+1584 (0004) : ddy, DATA:data
+1519 (0001) : spentry, DATA:data
+151a (0001) : gfx_old_border, DATA:data
+151b (0001) : gfx_old_background, DATA:data
+00f7 (0000) : ZeroEnd, END:zeropage
+00f7 (0000) : ZeroStart, START:zeropage
+2800 (0000) : BSSStart, START:bss
+2c0c (0000) : BSSEnd, END:bss
+a000 (0000) : StackEnd, END:stack

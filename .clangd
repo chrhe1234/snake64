@@ -1,0 +1,29 @@
+CompileFlags:
+  Add:
+    - -std=c17
+    - -funsigned-char
+
+    # Oscar64 include directory — change this path
+    - -I/home/christian/opt/oscar64/include
+
+    # Oscar64 storage/function qualifiers
+    - -D__zeropage=
+    - -D__striped=
+    - -D__export=
+    - -D__noinline=
+    - -D__forceinline=
+    - -D__native=
+    - -D__interrupt=
+    - -D__hwinterrupt=
+    - -D__memmap=
+    - -D__dynstack=
+
+    # Oscar64 compiler hints
+    - -D__assume(x)=((void)0)
+    - -D__bankof(x)=0
+
+    # Oscar64 has many pragmas that clang doesn't know
+    - -Wno-unknown-pragmas
+
+Diagnostics:
+  UnusedIncludes: None
