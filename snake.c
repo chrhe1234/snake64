@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdint.h>
 #include <c64/vic.h>
 #include <c64/cia.h>
@@ -46,11 +47,18 @@ __export volatile uint8_t charset[2048] = {
 #define SCOLOR1		C64_LIGHT_GREEN
 #define	SCOLOR2		C64_LIGHT_BLUE
 
-// snake direction flags
+// snake direction flags (do not change, those values are assumed in several places)
 #define	SDIR_UP		0
 #define	SDIR_RIGHT	1
 #define	SDIR_DOWN	2
 #define	SDIR_LEFT	3
+
+// opposite direction, alternative is (SDIR_xyz + 2) & 0x03 but that might take a little longer
+uint8_t SDIR_OPPOSITE[4] = {SDIR_DOWN, SDIR_LEFT, SDIR_UP, SDIR_RIGHT};
+
+// snake head movement depending on direction direction changes ddx/ddy[SIDR_xyz]
+const int8_t ddx[4] = {0, 1, 0, -1};
+const int8_t ddy[4] = {-1, 0, 1, 0};
 
 // snake status flags
 #define	SNAKE_ACTIVE	0
@@ -238,11 +246,6 @@ void snake_set_dead_color(uint8_t s) {
 	}
 }
 
-// snake direction changes, #define	SDIR_UP		0, #define	SDIR_RIGHT	1, #define	SDIR_DOWN	2, #define	SDIR_LEFT	3
-
-const int8_t ddx[4] = {0, 1, 0, -1};
-const int8_t ddy[4] = {-1, 0, 1, 0};
-
 // advance snake in the correct direction
 void snake_advance(uint8_t s) {
 	uint8_t nx, ny, content;
@@ -415,6 +418,144 @@ void snake_control(uint8_t s) {
 	}
 }
 
+// = 0 if the direction is not available (body of snake, obstacle, hazard ...), 1 = available, 2 = forced (food)
+#define SDIR_BLOCKED	0
+#define SDIR_AVAILABLE	1
+#define SDIR_FORCED		2
+
+// bonus score for keeping the current direction, reduces movement direction jitter
+#define SDIR_STICKINESS	3
+
+uint8_t snake_dir_available[4];
+int snake_dir_score[4];
+
+uint8_t abs8(int8_t v) {
+	if (v >= 0)
+		return (uint8_t) v;
+	else
+		return (uint8_t) -v;
+}
+
+void snake_computer(uint8_t s) {
+	uint8_t hx, hy, hd;		// snake head position and direction
+	switch (s) {
+		case 1:
+			hx = snake1.x[snake1.start];
+			hy = snake1.y[snake1.start];
+			hd = snake1.direction;
+			break;
+		case 2:
+			hx = snake2.x[snake2.start];
+			hy = snake2.y[snake2.start];
+			hd = snake2.direction;
+			break;
+		default:
+			return;
+	}
+	uint8_t forced_move = 0, forced_move_direction = 0;		// check available directions
+	for (uint8_t i = 0; i < 4; i++) {
+		if (i == SDIR_OPPOSITE[hd]) {						// cannot reverse 180°
+			snake_dir_available[i] = SDIR_BLOCKED;
+		} else {
+			uint8_t nx = hx + ddx[i];						// no bounds check necessary, head stays within +1 .. MAX-1
+			uint8_t ny = hy + ddy[i];
+			uint8_t c = gfx_scr_get_xy(nx, ny);
+			if (c == TILE_HAZARD)
+				snake_dir_available[i] = SDIR_BLOCKED;
+			else
+				if (c == TILE_FOOD) {
+					snake_dir_available[i] = SDIR_FORCED;
+					forced_move++;
+					forced_move_direction = i;
+				} else
+					if (c != TILE_EMPTY)
+						snake_dir_available[i] = SDIR_BLOCKED;
+					else
+						snake_dir_available[i] = SDIR_AVAILABLE;
+		}
+	}
+	if (forced_move) {
+		if (s == 1) {
+			snake1.direction = forced_move_direction;
+			return;
+		}
+		if (s == 2) {
+			snake2.direction = forced_move_direction;
+			return;
+		}
+	}
+	// test the 5x5 environment one step into each available direction (and the number of empty spaces
+	// in this direction and then calculate the score
+	uint8_t nhd = hd;	// new head direction defaults to current one
+	int max_score = INT16_MIN;
+	for (uint8_t i = 0; i < 4; i++) {
+		if (snake_dir_available[i] == SDIR_AVAILABLE) {
+			uint8_t empty = 0, hazard = 0, food = 0, empty_ahead = 0;
+			// count number of empty or food spaces ahead in the chosen direction (max of 6)
+			int8_t cx = hx + ddx[i];
+			int8_t cy = hy + ddy[i];
+			for (uint8_t j = 0; j < 6; j++) {
+				cx += ddx[i];
+				cy += ddy[i];
+				if (cx < 0)
+					break;
+				if (cx > 39)
+					break;
+				if (cy < 0)
+					break;
+				if (cy > 23)
+					break;
+				uint8_t c = gfx_scr_get_xy((uint8_t) cx, (uint8_t) cy);
+				if (c == TILE_EMPTY || c == TILE_FOOD) {
+					empty_ahead++;
+				} else {
+					break;
+				}
+			}
+			// count the number of empty, food and hazardous tiles in the 5x5 area in the direction of interest
+			for (int8_t x = -2; x <= +2; x++) {
+				for (int8_t y = -2; y <= +2; y++) {
+					cx = hx + ddx[i] - x;
+					if (cx < 0)
+						cx = 0;
+					if (cx > 39)
+						cx = 39;
+					cy = hy + ddy[i] - y;
+					if (cy < 0)
+						cy = 0;
+					if (cy > 23)
+						cy = 23;
+					uint8_t c = gfx_scr_get_xy((uint8_t) cx, (uint8_t) cy);
+					if (c == TILE_EMPTY)
+						empty++;
+					if (c == TILE_FOOD) {
+						// the significance of food decreases with distance
+						uint8_t d = abs8(x) + abs8(y);
+						food += 6 - d;
+					}
+					if (c == TILE_HAZARD) {
+						// the significance of a hazard decreases with distance
+						uint8_t d = abs8(x) + abs8(y);
+						hazard += 6 - d;
+					}
+				}
+			}
+			int score = empty + food - hazard + (rand() & 0x03) + 2 * empty_ahead;
+			if (i == hd)
+				score += SDIR_STICKINESS;	// bias towards keeping the current direction
+			if (score > max_score) {		// track maximum score and store new head direction
+				max_score = score;
+				nhd = i;
+			}
+		}
+	}
+	// set new direction
+	if (s == 1)
+		snake1.direction = nhd;
+	if (s == 2)
+		snake2.direction = nhd;
+}
+
 int main(void) {
 	gfx_init();
 	gfx_draw_frame();
@@ -436,17 +577,24 @@ int main(void) {
 	snake_draw_tail(2);
 
 	uint8_t advance_counter = 0;
-	for(;;) {
+	uint8_t computer_counter = 0;
+	for (;;) {
 		wait_for_frame();
 		snake_control(1);
-		snake_control(2);
+		computer_counter++;
 
-		if(advance_counter++ > 5) {
+		if (++advance_counter >= 5) {
 			if (snake1.status == SNAKE_ACTIVE) {
 				snake_advance(1);
+			}
+			if (snake2.status == SNAKE_ACTIVE) {
 				snake_advance(2);
 			}
 			advance_counter = 0;
+		} else {
+			// computer player only gets to update its direction every three loops and only in a loop without snake advancing/drawing
+			if (computer_counter >= 3)
+				snake_computer(2);
 		}
 	}
 
