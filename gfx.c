@@ -226,7 +226,7 @@ void gfx_init() {
 }
 
 // reset graphics
-void gfx_reset() {
+void gfx_exit() {
 	__asm {
 		lda     gfx_old_border          // restore border color
 		sta     $d020
@@ -239,30 +239,32 @@ void gfx_reset() {
 	}
 }
 
+#define FRAME_COLOR		C64_LIGHT_RED
+
 // draw playground frame
 void gfx_draw_frame() {
 	gfx_scr_set_xy(0, 0, 85);
-	gfx_clr_set_xy(0, 0, 1);
+	gfx_clr_set_xy(0, 0, FRAME_COLOR);
 	gfx_scr_set_xy(39, 0, 73);
-	gfx_clr_set_xy(39, 0, 1);
+	gfx_clr_set_xy(39, 0, FRAME_COLOR);
 
 	gfx_scr_set_xy(0, 23, 74);
-	gfx_clr_set_xy(0, 23, 1);
+	gfx_clr_set_xy(0, 23, FRAME_COLOR);
 	gfx_scr_set_xy(39, 23, 75);
-	gfx_clr_set_xy(39, 23, 1);
+	gfx_clr_set_xy(39, 23, FRAME_COLOR);
 
 	for(uint8_t i = 1; i < 23; i++) {
 		gfx_scr_set_xy(0, i, 66);
 		gfx_scr_set_xy(39, i, 66);
-		gfx_clr_set_xy(0, i, 1);
-		gfx_clr_set_xy(39, i, 1);
+		gfx_clr_set_xy(0, i, FRAME_COLOR);
+		gfx_clr_set_xy(39, i, FRAME_COLOR);
 	}
 
 	for(uint8_t i = 1; i < 39; i++) {
 		gfx_scr_set_xy(i, 0, 67);
 		gfx_scr_set_xy(i, 23, 67);
-		gfx_clr_set_xy(i, 0, 1);
-		gfx_clr_set_xy(i, 23, 1);
+		gfx_clr_set_xy(i, 0, FRAME_COLOR);
+		gfx_clr_set_xy(i, 23, FRAME_COLOR);
 	}
 }
 

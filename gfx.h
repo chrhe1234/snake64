@@ -43,7 +43,7 @@ void gfx_clr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca);
 void gfx_init();
 
 // reset graphics
-void gfx_reset();
+void gfx_exit();
 
 // draw playground frame
 void gfx_draw_frame();

@@ -37,6 +37,8 @@ __export volatile uint8_t charset[2048] = {
 #define chrout	$ffd2				// chrout ROM address
 #define getin	$ffe4				// getin ROM address
 
+uint8_t background_color = C64_BLACK;
+
 // define snake part character ids
 #define SP_HEAD		87
 #define	SP_BODY		39
@@ -67,6 +69,9 @@ const int8_t ddy[4] = {-1, 0, 1, 0};
 
 #define	SNAKE_MAX		240
 
+// number of consecutive blocked advance-ticks tolerated before a trapped snake starts shrinking
+#define STUCK_TIMEOUT	4
+
 typedef struct {
 	uint8_t	status;
 	uint8_t	direction;				// movement direction
@@ -74,6 +79,8 @@ typedef struct {
 	uint8_t	y[256];
 	uint8_t	start, end, length;		// index of current start and end, length
 	uint8_t	grow;					// number of rounds the snake should keep growing
+	uint8_t	stuck;					// number of consecutive blocked advance attempts
+	uint8_t score[4];				// score in individual digits
 } Snake;
 
 Snake snake1, snake2;
@@ -90,12 +97,17 @@ void snake_reset(uint8_t s) {
 		snake1.end = 0;
 		snake1.length = 0;
 		snake1.grow = 0;
+		snake1.stuck = 0;
 		for (uint8_t i = 0;; ++i) {
 			snake1.x[i] = 0xff;
 			snake1.y[i] = 0xff;
 			if (i == 255)
 				break;
 		}
+		snake1.score[0] = 0;
+		snake1.score[1] = 0;
+		snake1.score[2] = 0;
+		snake1.score[3] = 0;
 		return;
 	}
 	if (s == 2) {
@@ -105,12 +117,75 @@ void snake_reset(uint8_t s) {
 		snake2.end = 0;
 		snake2.length = 0;
 		snake2.grow = 0;
+		snake2.stuck = 0;
 		for (uint8_t i = 0;; ++i) {
 			snake2.x[i] = 0xff;
 			snake2.y[i] = 0xff;
 			if (i == 255)
 				break;
 		}
+		snake2.score[0] = 0;
+		snake2.score[1] = 0;
+		snake2.score[2] = 0;
+		snake2.score[3] = 0;
+		return;
+	}
+}
+
+void snake_inc_score(uint8_t s) {
+	if (s == 1) {
+		snake1.score[0]++;
+		if (snake1.score[0] >= 10) {
+			snake1.score[0] = 0;
+			snake1.score[1]++;
+			if (snake1.score[1] >= 10) {
+				snake1.score[1] = 0;
+				snake1.score[2]++;
+				if (snake1.score[2] >= 10) {
+					snake1.score[2] = 0;
+					snake1.score[3]++;
+					if (snake1.score[3] >= 10) {
+						snake1.score[3] = 0;
+					}
+				}
+			}
+		}
+		return;
+	}
+	if (s == 2) {
+		snake2.score[0]++;
+		if (snake2.score[0] >= 10) {
+			snake2.score[0] = 0;
+			snake2.score[1]++;
+			if (snake2.score[1] >= 10) {
+				snake2.score[1] = 0;
+				snake2.score[2]++;
+				if (snake2.score[2] >= 10) {
+					snake2.score[2] = 0;
+					snake2.score[3]++;
+					if (snake2.score[3] >= 10) {
+						snake2.score[3] = 0;
+					}
+				}
+			}
+		}
+		return;
+	}
+}
+
+void snake_draw_score(uint8_t s) {
+	if (s == 1) {
+		gfx_scr_set_xy(1, 24, snake1.score[3] + 48);
+		gfx_scr_set_xy(2, 24, snake1.score[2] + 48);
+		gfx_scr_set_xy(3, 24, snake1.score[1] + 48);
+		gfx_scr_set_xy(4, 24, snake1.score[0] + 48);
+		return;
+	}
+	if (s == 2) {
+		gfx_scr_set_xy(35, 24, snake2.score[3] + 48);
+		gfx_scr_set_xy(36, 24, snake2.score[2] + 48);
+		gfx_scr_set_xy(37, 24, snake2.score[1] + 48);
+		gfx_scr_set_xy(38, 24, snake2.score[0] + 48);
 		return;
 	}
 }
@@ -246,6 +321,37 @@ void snake_set_dead_color(uint8_t s) {
 	}
 }
 
+// apply hazard-style punishment to snake s (shrink by one segment while long enough to survive, otherwise die)
+void snake_punish(uint8_t s) {
+	if (s == 1) {
+		background_color = SCOLOR1;
+		if (snake1.length <= 5) {
+			snake1.status = SNAKE_DEAD;
+			snake_set_dead_color(1);
+		} else {
+			snake1.length--;
+			snake1.end++;
+			snake_draw_tail(1);
+		}
+		return;
+	}
+	if (s == 2) {
+		background_color = SCOLOR2;
+		if (snake2.length <= 5) {
+			snake2.status = SNAKE_DEAD;
+			snake_set_dead_color(2);
+		} else {
+			snake2.length--;
+			snake2.end++;
+			snake_draw_tail(2);
+		}
+		return;
+	}
+}
+
+// deactivate the food slot at x,y (called when a snake eats it), defined below with the rest of the food logic
+void food_deactivate(uint8_t x, uint8_t y);
+
 // advance snake in the correct direction
 void snake_advance(uint8_t s) {
 	uint8_t nx, ny, content;
@@ -259,20 +365,21 @@ void snake_advance(uint8_t s) {
 			if (content == TILE_FOOD) {			// collision with food
 				snake1.grow = 2;
 				gfx_scr_set_xy(nx, ny, TILE_EMPTY);
-			} else
-				if (content == TILE_HAZARD) {	// collision with hazard
-					if (snake1.length <= 5) {
-						snake1.status = SNAKE_DEAD;
-						snake_set_dead_color(1);
-					} else {
-						snake1.length--;
-						snake1.end++;
-						snake_draw_tail(1);
-					}
-					return;
-				} else
-					return;
+				food_deactivate(nx, ny);
+				snake_inc_score(1);
+				snake_draw_score(1);
+			} else {
+				// collision with hazard or blocked by wall, self or other snake
+				snake1.stuck++;
+				if (snake1.stuck >= STUCK_TIMEOUT) {
+					snake1.stuck = 0;
+					snake_punish(1);
+				}
+				return;
+			}
 		}
+		// move forward
+		snake1.stuck = 0;
 		snake1.start++;
 		snake1.x[snake1.start] = nx;
 		snake1.y[snake1.start] = ny;
@@ -293,20 +400,21 @@ void snake_advance(uint8_t s) {
 			if (content == TILE_FOOD) {			// collision with food
 				snake2.grow = 2;
 				gfx_scr_set_xy(nx, ny, TILE_EMPTY);
-			} else
-				if (content == TILE_HAZARD) {	// collision with hazard
-					if (snake2.length <= 5) {
-						snake2.status = SNAKE_DEAD;
-						snake_set_dead_color(2);
-					} else {
-						snake2.length--;
-						snake2.end++;
-						snake_draw_tail(2);
-					}
-					return;
-				} else
-					return;
+				food_deactivate(nx, ny);
+				snake_inc_score(2);
+				snake_draw_score(2);
+			} else {
+				// collision with hazard or blocked by wall, self or other snake
+				snake2.stuck++;
+				if (snake2.stuck >= STUCK_TIMEOUT) {
+					snake2.stuck = 0;
+					snake_punish(2);
+				}
+				return;
+			}
 		}
+		// move forward
+		snake2.stuck = 0;
 		snake2.start++;
 		snake2.x[snake2.start] = nx;
 		snake2.y[snake2.start] = ny;
@@ -556,14 +664,78 @@ void snake_computer(uint8_t s) {
 		snake2.direction = nhd;
 }
 
+typedef struct {
+	uint8_t x;
+	uint8_t y;
+	uint8_t active;
+	uint8_t age;
+} Food;
+
+#define FOOD_MAX			4
+#define FOOD_INACTIVE		0
+#define FOOD_ACTIVE			1
+#define FOOD_SPAWN_TRIES	10
+#define FOOD_DURATION		10
+
+Food food[FOOD_MAX];
+
+void food_init() {
+	for (uint8_t i = 0; i < FOOD_MAX; i++)
+		food[i].active = FOOD_INACTIVE;
+}
+
+// mark the food slot at x,y inactive (e.g. called when a snake eats it)
+void food_deactivate(uint8_t x, uint8_t y) {
+	for (uint8_t i = 0; i < FOOD_MAX; i++) {
+		if (food[i].active == FOOD_ACTIVE && food[i].x == x && food[i].y == y) {
+			food[i].active = FOOD_INACTIVE;
+			return;
+		}
+	}
+}
+
+// checks if food needs to spawn or despawn
+void food_check() {
+	for (uint8_t i = 0; i < FOOD_MAX; i++) {
+		if (food[i].active == FOOD_INACTIVE) {
+			// food inactive -> spawn
+			for (uint8_t j = 0; j < FOOD_SPAWN_TRIES; j++) {
+				uint8_t x = 1 + (rand() & 0x1f) + (rand() & 0x03) * 2;	// random number between 1 and 38
+				uint8_t y = 1 + (rand() & 0x0f) + (rand() & 0x03) * 2;	// random number between 1 and 22, a bit crude
+				if (gfx_scr_get_xy(x, y) == TILE_EMPTY) {
+					food[i].x = x;
+					food[i].y = y;
+					food[i].age = FOOD_DURATION + (rand() % FOOD_DURATION);
+					food[i].active = 1;
+					gfx_draw_food(x, y);
+					break;
+				}
+			}
+		} else {
+			// food active -> age and despawn if necessary
+			if (food[i].age > 0) {
+				food[i].age--;
+			} else {
+				food[i].active = FOOD_INACTIVE;
+				gfx_scr_set_xy(food[i].x, food[i].y, TILE_EMPTY);
+			}
+		}
+	}
+}
+
+#define ADVANCE_TICKS	5		// number of frames between snake advances, must be > 2
+#define COMPUTER_TICKS	3		// number of frames between computer moves, must be > 2
+#define FOOD_TICKS		50		// number of frames between food checks
+#define LEVEL_TIMER_TICKS	50	// number of frames between level timer ticks
+
+const uint8_t level_timer_char[] = {32, 101, 97, 97, 234, 224};
+
 int main(void) {
 	gfx_init();
 	gfx_draw_frame();
 
-	gfx_draw_food(35, 20);
-	gfx_draw_food(35, 5);
-	gfx_draw_food(5, 20);
-	gfx_draw_food(5, 5);
+	food_init();
+	food_check();
 
 	gfx_draw_hazard(20, 3);
 	gfx_draw_hazard(20, 20);
@@ -576,14 +748,47 @@ int main(void) {
 	snake_draw_body(2);
 	snake_draw_tail(2);
 
+	gfx_clr_set_xy(1, 24, SCOLOR1);		// set color for score
+	gfx_clr_set_xy(2, 24, SCOLOR1);
+	gfx_clr_set_xy(3, 24, SCOLOR1);
+	gfx_clr_set_xy(4, 24, SCOLOR1);
+	snake_draw_score(1);
+
+	gfx_clr_set_xy(35, 24, SCOLOR2);	// set color for score
+	gfx_clr_set_xy(36, 24, SCOLOR2);
+	gfx_clr_set_xy(37, 24, SCOLOR2);
+	gfx_clr_set_xy(38, 24, SCOLOR2);
+	snake_draw_score(2);
+
+	gfx_scr_set_xy(10, 24, 20);
+	gfx_scr_set_xy(11, 24, 9);
+	gfx_scr_set_xy(12, 24, 13);
+	gfx_scr_set_xy(13, 24, 5);
+	gfx_scr_set_xy(14, 24, 80);
+	gfx_scr_set_xy(25, 24, 79);
+	for (uint8_t i = 15; i <= 24; i++) {
+		gfx_scr_set_xy(i, 24, 224);
+		gfx_clr_set_xy(i, 24, C64_LIGHT_GRAY);
+	}
+
 	uint8_t advance_counter = 0;
 	uint8_t computer_counter = 0;
+	uint8_t food_counter = 0;
+	uint8_t level_timer_counter = 0;
+
+	uint8_t level_timer1 = 9;
+	uint8_t level_timer2 = 4;
+
 	for (;;) {
 		wait_for_frame();
 		snake_control(1);
-		computer_counter++;
 
-		if (++advance_counter >= 5) {
+		computer_counter++;
+		advance_counter++;
+		food_counter++;
+		level_timer_counter++;
+
+		if (advance_counter >= ADVANCE_TICKS) {
 			if (snake1.status == SNAKE_ACTIVE) {
 				snake_advance(1);
 			}
@@ -593,11 +798,41 @@ int main(void) {
 			advance_counter = 0;
 		} else {
 			// computer player only gets to update its direction every three loops and only in a loop without snake advancing/drawing
-			if (computer_counter >= 3)
+			if (computer_counter >= COMPUTER_TICKS) {
 				snake_computer(2);
+				computer_counter = 0;
+			} else {
+				// food checks only occur when nothing advances
+				if (food_counter >= FOOD_TICKS) {
+					food_check();
+					food_counter = 0;
+				}
+			}
+		}
+
+		// tick down
+		if (level_timer_counter >= LEVEL_TIMER_TICKS) {
+			level_timer_counter = 0;
+			level_timer2--;
+			gfx_scr_set_xy(15 + level_timer1, 24, level_timer_char[level_timer2]);
+			if (level_timer2 == 0) {
+				level_timer2 = 4;
+				if (level_timer1 == 0)
+					break;
+				else
+					level_timer1--;
+			}
+		}
+
+		__asm {
+			lda		background_color
+//			sta     $d020           // set border color
+			sta     $d021           // set background color
+			lda		#C64_BLACK
+			sta		background_color
 		}
 	}
 
-	gfx_reset();
+	gfx_exit();
 	return 0;
 }
