@@ -54,4 +54,10 @@ void gfx_draw_food(uint8_t x, uint8_t y);
 // draw/put hazard on the playing field
 void gfx_draw_hazard(uint8_t x, uint8_t y);
 
+// wait for the end of the frame (line 250)
+void gfx_wait_frame_end();
+
+// fade all character colors from white to black
+void gfx_fade_to_black();
+
 #endif

@@ -5,6 +5,7 @@
 
 #include "gfx.h"
 #include "sprites.h"
+#include "snd.h"
 
 // ############################################################### memory layout
 // $0A00-$0BFF code/data
@@ -476,19 +477,6 @@ void wait_100ms() {
 	}
 }
 
-// wait for scan line 250, end of frame
-void wait_for_frame() {
-	__asm {
-		lda		#250
-	_wait1:
-		cmp		$d012
-		bne		_wait1
-	_wait2:
-		cmp		$d012
-		beq		_wait2
-	}
-}
-
 #define JOY_UP      0x01
 #define JOY_DOWN    0x02
 #define JOY_LEFT    0x04
@@ -726,13 +714,15 @@ void food_check() {
 #define ADVANCE_TICKS	5		// number of frames between snake advances, must be > 2
 #define COMPUTER_TICKS	3		// number of frames between computer moves, must be > 2
 #define FOOD_TICKS		50		// number of frames between food checks
-#define LEVEL_TIMER_TICKS	50	// number of frames between level timer ticks
+#define LEVEL_TIMER_TICKS	50	// number of frames between level timer ticks (e.g. 50)
 
-const uint8_t level_timer_char[] = {32, 101, 97, 97, 234, 224};
+const uint8_t level_timer_char[] = {32, 101, 97, 234, 224};
 
 int main(void) {
 	gfx_init();
 	gfx_draw_frame();
+
+	snd_init();
 
 	food_init();
 	food_check();
@@ -780,8 +770,16 @@ int main(void) {
 	uint8_t level_timer2 = 4;
 
 	for (;;) {
-		wait_for_frame();
+		gfx_wait_frame_end();
 		snake_control(1);
+		__asm {
+			lda		background_color
+//			sta     $d020           // set border color
+			sta     $d021           // set background color
+			lda		#C64_BLACK
+			sta		background_color
+		}
+		snd_update();
 
 		computer_counter++;
 		advance_counter++;
@@ -815,6 +813,7 @@ int main(void) {
 			level_timer_counter = 0;
 			level_timer2--;
 			gfx_scr_set_xy(15 + level_timer1, 24, level_timer_char[level_timer2]);
+			snd_play(0, &snd_blip);
 			if (level_timer2 == 0) {
 				level_timer2 = 4;
 				if (level_timer1 == 0)
@@ -823,16 +822,9 @@ int main(void) {
 					level_timer1--;
 			}
 		}
-
-		__asm {
-			lda		background_color
-//			sta     $d020           // set border color
-			sta     $d021           // set background color
-			lda		#C64_BLACK
-			sta		background_color
-		}
 	}
-
+	gfx_fade_to_black();
+	snd_stop_all();
 	gfx_exit();
 	return 0;
 }

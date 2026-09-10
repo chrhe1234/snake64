@@ -280,4 +280,50 @@ void gfx_draw_hazard(uint8_t x, uint8_t y) {
 	gfx_clr_set_xy(x, y, C64_LIGHT_RED);
 }
 
+// wait for scan line 250, end of frame
+void gfx_wait_frame_end() {
+	__asm {
+		lda		#250
+	_wait1:
+		cmp		$d012
+		bne		_wait1
+	_wait2:
+		cmp		$d012
+		beq		_wait2
+	}
+}
+
+void gfx_fade_to_black() {
+	gfx_wait_frame_end();
+	gfx_clr_set(C64_LIGHT_GRAY);
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_clr_set(C64_WHITE);
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_clr_set(C64_LIGHT_GRAY);
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_clr_set(C64_GRAY);
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_clr_set(C64_DARK_GRAY);
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_clr_set(C64_BLACK);
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+	gfx_wait_frame_end();
+}
+
+
 
