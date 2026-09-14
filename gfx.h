@@ -6,19 +6,19 @@
 #define C64_BLACK		0
 #define C64_WHITE		1
 #define C64_RED			2
-#define C64_CYAN        3
-#define C64_PURPLE      4
-#define C64_GREEN       5
-#define C64_BLUE        6
-#define C64_YELLOW      7
-#define C64_ORANGE      8
-#define C64_BROWN       9
-#define C64_LIGHT_RED   10
-#define C64_DARK_GRAY   11
-#define C64_GRAY        12
-#define C64_LIGHT_GREEN 13
-#define C64_LIGHT_BLUE  14
-#define C64_LIGHT_GRAY  15
+#define C64_CYAN		3
+#define C64_PURPLE		4
+#define C64_GREEN		5
+#define C64_BLUE		6
+#define C64_YELLOW		7
+#define C64_ORANGE		8
+#define C64_BROWN		9
+#define C64_LIGHT_RED	10
+#define C64_DARK_GRAY	11
+#define C64_GRAY		12
+#define C64_LIGHT_GREEN	13
+#define C64_LIGHT_BLUE	14
+#define C64_LIGHT_GRAY	15
 
 #define	TILE_EMPTY	0x20
 #define	TILE_FOOD	0x53
@@ -59,5 +59,8 @@ void gfx_wait_frame_end();
 
 // fade all character colors from white to black
 void gfx_fade_to_black();
+
+// print the given screen code (!) string to the given location and color
+void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str);
 
 #endif

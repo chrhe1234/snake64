@@ -16,7 +16,15 @@ typedef struct {
     uint8_t duration;    // gate-on duration in frames
 } Sound;
 
-extern const Sound snd_blip;
+void snd_play_timer_tick();
+
+void snd_play_collision();
+
+void snd_play_eat();
+
+void snd_play_bounce();
+
+void snd_play_death();
 
 void snd_init();
 

@@ -96,6 +96,7 @@ const Sound sound_death = {
     .duration = 20
 };
 
+// sound for eating food
 const Sound sound_gulp = {
     .freq     = 0x0f00,
     .pwm      = 0x0000,
@@ -112,6 +113,26 @@ void wait_frame(void) {
         ;
     while (VIC_RASTER == 250)
         ;
+}
+
+void snd_play_timer_tick() {
+	snd_play(2, &sound_blip);
+}
+
+void snd_play_collision() {
+	snd_play(0, &sound_smash);
+}
+
+void snd_play_eat() {
+	snd_play(1, &sound_gulp);
+}
+
+void snd_play_bounce() {
+	snd_play(0, &sound_bounce);
+}
+
+void snd_play_death() {
+	snd_play(0, &sound_death);
 }
 
 void snd_test() {

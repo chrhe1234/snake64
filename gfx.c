@@ -293,36 +293,64 @@ void gfx_wait_frame_end() {
 	}
 }
 
+uint8_t gfx_wait_for_key() {
+	__asm {
+	_l1:
+		jsr		getin
+		beq		_l1
+		sta		accu
+		lda		#0
+		sta		accu+1
+	}
+}
+
+// print a null-terminated string (screen code) at cx, cy in the given color
+void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str) {
+	while (*str) {
+		gfx_scr_set_xy(cx, cy, (uint8_t) *str);
+		gfx_clr_set_xy(cx, cy, color);
+		cx++;
+		str++;
+      }
+}
+
 void gfx_fade_to_black() {
+	// gfx_wait_for_key();
 	gfx_wait_frame_end();
 	gfx_clr_set(C64_LIGHT_GRAY);
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
+	// gfx_wait_for_key();
 	gfx_clr_set(C64_WHITE);
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
+	// gfx_wait_for_key();
 	gfx_clr_set(C64_LIGHT_GRAY);
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
+	// gfx_wait_for_key();
 	gfx_clr_set(C64_GRAY);
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
+	// gfx_wait_for_key();
 	gfx_clr_set(C64_DARK_GRAY);
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
+	// gfx_wait_for_key();
 	gfx_clr_set(C64_BLACK);
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
+	// gfx_wait_for_key();
 }
 
 

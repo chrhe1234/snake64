@@ -89,8 +89,8 @@ Snake snake1, snake2;
 // *** most of the code below would use pointers but for the C64 the generated code is more compact like this (i.e. with
 // hardwired addresses
 
-// reset all data for the given snake
-void snake_reset(uint8_t s) {
+// reset all data for the given snake, resets score if reset_score != 0
+void snake_reset(uint8_t s, uint8_t reset_score) {
 	if (s == 1) {
 		snake1.status = 0;
 		snake1.direction = SDIR_RIGHT;
@@ -105,10 +105,12 @@ void snake_reset(uint8_t s) {
 			if (i == 255)
 				break;
 		}
-		snake1.score[0] = 0;
-		snake1.score[1] = 0;
-		snake1.score[2] = 0;
-		snake1.score[3] = 0;
+		if (reset_score) {
+			snake1.score[0] = 0;
+			snake1.score[1] = 0;
+			snake1.score[2] = 0;
+			snake1.score[3] = 0;
+		}
 		return;
 	}
 	if (s == 2) {
@@ -125,10 +127,12 @@ void snake_reset(uint8_t s) {
 			if (i == 255)
 				break;
 		}
-		snake2.score[0] = 0;
-		snake2.score[1] = 0;
-		snake2.score[2] = 0;
-		snake2.score[3] = 0;
+		if (reset_score) {
+			snake2.score[0] = 0;
+			snake2.score[1] = 0;
+			snake2.score[2] = 0;
+			snake2.score[3] = 0;
+		}
 		return;
 	}
 }
@@ -171,6 +175,51 @@ void snake_inc_score(uint8_t s) {
 			}
 		}
 		return;
+	}
+}
+
+void snake_dec_score(uint8_t s) {
+	if (s == 1) {
+		if (snake1.score[0] == 0 && snake1.score[1] == 0 && snake1.score[2] == 0 && snake1.score[3] == 0)
+			return;
+		if(snake1.score[0] > 0)
+			snake1.score[0]--;
+		else {
+			snake1.score[0] = 9;
+			if (snake1.score[1] > 0)
+				snake1.score[1]--;
+			else {
+				snake1.score[1] = 9;
+				if (snake1.score[2] > 0)
+					snake1.score[2]--;
+				else {
+					snake1.score[2] = 9;
+					if (snake1.score[3] > 0)
+						snake1.score[3]--;
+				}
+			}
+		}
+	}
+	if (s == 2) {
+		if (snake2.score[0] == 0 && snake2.score[1] == 0 && snake2.score[2] == 0 && snake2.score[3] == 0)
+			return;
+		if(snake2.score[0] > 0)
+			snake2.score[0]--;
+		else {
+			snake2.score[0] = 9;
+			if (snake2.score[1] > 0)
+				snake2.score[1]--;
+			else {
+				snake2.score[1] = 9;
+				if (snake2.score[2] > 0)
+					snake2.score[2]--;
+				else {
+					snake2.score[2] = 9;
+					if (snake2.score[3] > 0)
+						snake2.score[3]--;
+				}
+			}
+		}
 	}
 }
 
@@ -329,10 +378,14 @@ void snake_punish(uint8_t s) {
 		if (snake1.length <= 5) {
 			snake1.status = SNAKE_DEAD;
 			snake_set_dead_color(1);
+			snd_play_death();
 		} else {
+			snake_dec_score(1);
+			snake_draw_score(1);
 			snake1.length--;
 			snake1.end++;
 			snake_draw_tail(1);
+			snd_play_collision();
 		}
 		return;
 	}
@@ -341,10 +394,14 @@ void snake_punish(uint8_t s) {
 		if (snake2.length <= 5) {
 			snake2.status = SNAKE_DEAD;
 			snake_set_dead_color(2);
+			snd_play_death();
 		} else {
+			snake_dec_score(2);
+			snake_draw_score(2);
 			snake2.length--;
 			snake2.end++;
 			snake_draw_tail(2);
+			snd_play_collision();
 		}
 		return;
 	}
@@ -369,6 +426,7 @@ void snake_advance(uint8_t s) {
 				food_deactivate(nx, ny);
 				snake_inc_score(1);
 				snake_draw_score(1);
+				snd_play_eat();
 			} else {
 				// collision with hazard or blocked by wall, self or other snake
 				snake1.stuck++;
@@ -384,9 +442,12 @@ void snake_advance(uint8_t s) {
 		snake1.start++;
 		snake1.x[snake1.start] = nx;
 		snake1.y[snake1.start] = ny;
-		if (snake1.grow > 0 && snake1.length < SNAKE_MAX) {
+		if (snake1.grow > 0) {
 			snake1.grow--;
-			snake1.length++;
+			if (snake1.length < SNAKE_MAX)
+				snake1.length++;
+			else
+				snake1.end++;
 		} else {
 			snake1.end++;
 		}
@@ -404,6 +465,7 @@ void snake_advance(uint8_t s) {
 				food_deactivate(nx, ny);
 				snake_inc_score(2);
 				snake_draw_score(2);
+				snd_play_eat();
 			} else {
 				// collision with hazard or blocked by wall, self or other snake
 				snake2.stuck++;
@@ -419,9 +481,12 @@ void snake_advance(uint8_t s) {
 		snake2.start++;
 		snake2.x[snake2.start] = nx;
 		snake2.y[snake2.start] = ny;
-		if (snake2.grow > 0 && snake2.length < SNAKE_MAX) {
+		if (snake2.grow > 0) {
 			snake2.grow--;
-			snake2.length++;
+			if (snake2.length < SNAKE_MAX)
+				snake2.length++;
+			else
+				snake2.end++;
 		} else {
 			snake2.end++;
 		}
@@ -430,26 +495,26 @@ void snake_advance(uint8_t s) {
 	snake_draw_tail(s);
 }
 
-// initialize, reset both snakes
-void snake_init() {
-	snake_reset(1);
+// initialize, reset both snakes, reset the score if reset_score != 0
+void snake_init(uint8_t reset_score) {
+	snake_reset(1, reset_score);
 	snake1.status = SNAKE_ACTIVE;
 	snake1.direction = SDIR_LEFT;
-	snake_add(1, 18, 10);
-	snake_add(1, 17, 10);
-	snake_add(1, 16, 10);
-	snake_add(1, 15, 10);
-	snake_add(1, 14, 10);
-	snake_add(1, 13, 10);
-	snake_reset(2);
+	snake_add(1, 18, 11);
+	snake_add(1, 17, 11);
+	snake_add(1, 16, 11);
+	snake_add(1, 15, 11);
+	snake_add(1, 14, 11);
+	snake_add(1, 13, 11);
+	snake_reset(2, reset_score);
 	snake2.status = SNAKE_ACTIVE;
 	snake2.direction = SDIR_RIGHT;
-	snake_add(2, 22, 10);
-	snake_add(2, 23, 10);
-	snake_add(2, 24, 10);
-	snake_add(2, 25, 10);
-	snake_add(2, 26, 10);
-	snake_add(2, 27, 10);
+	snake_add(2, 22, 11);
+	snake_add(2, 23, 11);
+	snake_add(2, 24, 11);
+	snake_add(2, 25, 11);
+	snake_add(2, 26, 11);
+	snake_add(2, 27, 11);
 }
 
 uint8_t wait_for_key() {
@@ -711,119 +776,239 @@ void food_check() {
 	}
 }
 
-#define ADVANCE_TICKS	5		// number of frames between snake advances, must be > 2
-#define COMPUTER_TICKS	3		// number of frames between computer moves, must be > 2
-#define FOOD_TICKS		50		// number of frames between food checks
-#define LEVEL_TIMER_TICKS	50	// number of frames between level timer ticks (e.g. 50)
+void draw_hazard(uint8_t config) {
+	switch(config & 0x03) {
+		case 0:
+			// no obstacles
+			break;
+		case 1:
+			// four horizontal obstacles
+			for (uint8_t i = 0; i <= 10; i++) {
+				gfx_draw_hazard(5 + i, 5);
+				gfx_draw_hazard(24 + i, 5);
+				gfx_draw_hazard(5 + i, 16);
+				gfx_draw_hazard(24 + i, 16);
+			}
+			break;
+		case 2:
+			// four crosses
+			for (uint8_t i = 0; i <= 7; i++) {
+				gfx_draw_hazard(8 - 3 + i, 5);
+				gfx_draw_hazard(8 - 3 + i, 18);
+				gfx_draw_hazard(30 - 3 + i, 5);
+				gfx_draw_hazard(30 - 3 + i, 18);
+			}
+			for (uint8_t i = 0; i <= 6; i++) {
+				gfx_draw_hazard(8, 6 - 3 + i);
+				gfx_draw_hazard(31, 6 - 3 + i);
+				gfx_draw_hazard(8, 17 - 3 + i);
+				gfx_draw_hazard(31, 17 - 3 + i);
+			}
+		case 3:
+			// four blocks
+			for (uint8_t x = 0; x <= 7; x++) {
+				for (uint8_t y = 0; y <= 7; y++) {
+					gfx_draw_hazard(8 - 3 + x, 6 - 3 + y);
+					gfx_draw_hazard(8 - 3 + x, 17 - 3 + y);
+					gfx_draw_hazard(31 - 3 + x, 6 - 3 + y);
+					gfx_draw_hazard(31 - 3 + x, 17 - 3 + y);
+				}
+			}
+			break;
+		default:
+			break;
+	}
+}
+
+#define ADVANCE_TICKS		6		// number of frames between snake advances, must be > 2
+#define COMPUTER_TICKS		3		// number of frames between computer moves, must be > 2
+#define FOOD_TICKS			50		// number of frames between food checks
+#define LEVEL_TIMER_TICKS	50		// number of frames between level timer ticks (e.g. 50)
+
+#define PLAYER_VS_PLAYER	0		// p v p
+#define PLAYER_VS_COMPUTER	1		// p v e
+
+uint8_t game_mode = PLAYER_VS_PLAYER;
 
 const uint8_t level_timer_char[] = {32, 101, 97, 234, 224};
 
-int main(void) {
-	gfx_init();
-	gfx_draw_frame();
-
-	snd_init();
-
-	food_init();
-	food_check();
-
-	gfx_draw_hazard(20, 3);
-	gfx_draw_hazard(20, 20);
-
-	snake_init();
-	snake_draw_head(1);
-	snake_draw_body(1);
-	snake_draw_tail(1);
-	snake_draw_head(2);
-	snake_draw_body(2);
-	snake_draw_tail(2);
-
-	gfx_clr_set_xy(1, 24, SCOLOR1);		// set color for score
-	gfx_clr_set_xy(2, 24, SCOLOR1);
-	gfx_clr_set_xy(3, 24, SCOLOR1);
-	gfx_clr_set_xy(4, 24, SCOLOR1);
-	snake_draw_score(1);
-
-	gfx_clr_set_xy(35, 24, SCOLOR2);	// set color for score
-	gfx_clr_set_xy(36, 24, SCOLOR2);
-	gfx_clr_set_xy(37, 24, SCOLOR2);
-	gfx_clr_set_xy(38, 24, SCOLOR2);
-	snake_draw_score(2);
-
-	gfx_scr_set_xy(10, 24, 20);
-	gfx_scr_set_xy(11, 24, 9);
-	gfx_scr_set_xy(12, 24, 13);
-	gfx_scr_set_xy(13, 24, 5);
-	gfx_scr_set_xy(14, 24, 80);
-	gfx_scr_set_xy(25, 24, 79);
-	for (uint8_t i = 15; i <= 24; i++) {
-		gfx_scr_set_xy(i, 24, 224);
-		gfx_clr_set_xy(i, 24, C64_LIGHT_GRAY);
-	}
-
-	uint8_t advance_counter = 0;
-	uint8_t computer_counter = 0;
-	uint8_t food_counter = 0;
-	uint8_t level_timer_counter = 0;
-
-	uint8_t level_timer1 = 9;
-	uint8_t level_timer2 = 4;
+void game_loop(void) {
+	uint8_t first_level = 1;		// first level of the game, only reset
+	uint8_t level = 0;				// current level (0..63)
 
 	for (;;) {
-		gfx_wait_frame_end();
-		snake_control(1);
-		__asm {
-			lda		background_color
-//			sta     $d020           // set border color
-			sta     $d021           // set background color
-			lda		#C64_BLACK
-			sta		background_color
+		// display current level for one seconds
+		gfx_scr_set(32);
+		gfx_clr_set(1);
+		gfx_scr_set_xy(16, 12, 12);
+		gfx_scr_set_xy(17, 12, 5);
+		gfx_scr_set_xy(18, 12, 22);
+		gfx_scr_set_xy(19, 12, 5);
+		gfx_scr_set_xy(20, 12, 12);
+		gfx_scr_set_xy(22, 12, (uint8_t) (((level + 1) / 10) + 48));
+		gfx_scr_set_xy(23, 12, (uint8_t) (((level + 1) % 10) + 48));
+		for(uint8_t i = 0; i < 50; i++)
+			gfx_wait_frame_end();
+
+		// set zp screen
+		gfx_scr_set(32);
+		gfx_clr_set(1);
+		gfx_draw_frame();
+		draw_hazard(level);
+
+		// set up snakes
+		snake_init(first_level);
+		if (first_level) {
+			first_level = 0;
 		}
-		snd_update();
+		snake_draw_head(1);
+		snake_draw_body(1);
+		snake_draw_tail(1);
+		snake_draw_head(2);
+		snake_draw_body(2);
+		snake_draw_tail(2);
 
-		computer_counter++;
-		advance_counter++;
-		food_counter++;
-		level_timer_counter++;
+		// set up food
+		food_init();
+		food_check();
 
-		if (advance_counter >= ADVANCE_TICKS) {
-			if (snake1.status == SNAKE_ACTIVE) {
-				snake_advance(1);
+		gfx_clr_set_xy(1, 24, SCOLOR1);		// set color for score
+		gfx_clr_set_xy(2, 24, SCOLOR1);
+		gfx_clr_set_xy(3, 24, SCOLOR1);
+		gfx_clr_set_xy(4, 24, SCOLOR1);
+		snake_draw_score(1);
+
+		gfx_clr_set_xy(35, 24, SCOLOR2);	// set color for score
+		gfx_clr_set_xy(36, 24, SCOLOR2);
+		gfx_clr_set_xy(37, 24, SCOLOR2);
+		gfx_clr_set_xy(38, 24, SCOLOR2);
+		snake_draw_score(2);
+
+		gfx_scr_set_xy(10, 24, 20);			// set up timer indicator
+		gfx_scr_set_xy(11, 24, 9);
+		gfx_scr_set_xy(12, 24, 13);
+		gfx_scr_set_xy(13, 24, 5);
+		gfx_scr_set_xy(14, 24, 80);
+		gfx_scr_set_xy(25, 24, 79);
+		for (uint8_t i = 15; i <= 24; i++) {
+			gfx_scr_set_xy(i, 24, 224);
+			gfx_clr_set_xy(i, 24, C64_LIGHT_GRAY);
+		}
+
+		uint8_t advance_counter = 0;
+		uint8_t computer_counter = 0;
+		uint8_t food_counter = 0;
+		uint8_t level_timer_counter = 0;
+
+		uint8_t level_timer1 = 9;
+		uint8_t level_timer2 = 4;
+
+		for (;;) {
+			gfx_wait_frame_end();
+			snake_control(1);
+			if (game_mode == PLAYER_VS_PLAYER)
+				snake_control(2);
+			__asm {
+				lda		background_color
+	//			sta     $d020           // set border color
+				sta     $d021           // set background color
+				lda		#C64_BLACK
+				sta		background_color
 			}
-			if (snake2.status == SNAKE_ACTIVE) {
-				snake_advance(2);
-			}
-			advance_counter = 0;
-		} else {
-			// computer player only gets to update its direction every three loops and only in a loop without snake advancing/drawing
-			if (computer_counter >= COMPUTER_TICKS) {
-				snake_computer(2);
-				computer_counter = 0;
+			snd_update();
+
+			computer_counter++;
+			advance_counter++;
+			food_counter++;
+			level_timer_counter++;
+
+			if (advance_counter >= ADVANCE_TICKS) {
+				if (snake1.status == SNAKE_ACTIVE) {
+					snake_advance(1);
+				}
+				if (snake2.status == SNAKE_ACTIVE) {
+					snake_advance(2);
+				}
+				advance_counter = 0;
 			} else {
-				// food checks only occur when nothing advances
-				if (food_counter >= FOOD_TICKS) {
-					food_check();
-					food_counter = 0;
+				// computer player only gets to update its direction every three loops and only in a loop without snake advancing/drawing
+				if (computer_counter >= COMPUTER_TICKS) {
+					if(game_mode == PLAYER_VS_COMPUTER)
+						snake_computer(2);
+					computer_counter = 0;
+				} else {
+					// food checks only occur when nothing advances
+					if (food_counter >= FOOD_TICKS) {
+						food_check();
+						food_counter = 0;
+					}
 				}
 			}
-		}
 
-		// tick down
-		if (level_timer_counter >= LEVEL_TIMER_TICKS) {
-			level_timer_counter = 0;
-			level_timer2--;
-			gfx_scr_set_xy(15 + level_timer1, 24, level_timer_char[level_timer2]);
-			snd_play(0, &snd_blip);
-			if (level_timer2 == 0) {
-				level_timer2 = 4;
-				if (level_timer1 == 0)
-					break;
-				else
-					level_timer1--;
+			// tick down
+			if (level_timer_counter >= LEVEL_TIMER_TICKS) {
+				level_timer_counter = 0;
+				level_timer2--;
+				gfx_scr_set_xy(15 + level_timer1, 24, level_timer_char[level_timer2]);
+				snd_play_timer_tick();
+				if (level_timer2 == 0) {
+					level_timer2 = 4;
+					if (level_timer1 == 0)
+						break;
+					else
+						level_timer1--;
+				}
 			}
+
+			// exit if both snakes are dead
+			if (snake1.status == SNAKE_DEAD && snake2.status == SNAKE_DEAD)
+				break;
+
 		}
+		gfx_fade_to_black();
+
+		level = (level + 1) & 0x3f;
+
+		// no further levels if both snakes are dead
+		if (snake1.status == SNAKE_DEAD && snake2.status == SNAKE_DEAD)
+			break;
 	}
-	gfx_fade_to_black();
+}
+
+#define KEY_F1		133
+#define KEY_F3		134
+#define KEY_F5		135
+
+uint8_t menu() {
+	gfx_clr_set(C64_BLACK);
+	gfx_scr_set(32);
+	gfx_print_xy(2, 2, C64_GREEN, S"MENU");
+	gfx_print_xy(2, 4, C64_CYAN, S"F1   START GAME");
+	gfx_print_xy(2, 6, C64_CYAN, S"F3   CHANGE MODE");
+	gfx_print_xy(2, 9, C64_CYAN, S"F5   EXIT");
+	while (1) {
+		if (game_mode == PLAYER_VS_PLAYER)
+			gfx_print_xy(2, 7, C64_CYAN, S"     CURRENTLY PLAYER VS. PLAYER");
+		else
+			gfx_print_xy(2, 7, C64_CYAN, S"     CURRENTLY PLAYER VS. COMPUTER");
+		uint8_t k = wait_for_key();
+		if (k == KEY_F3)
+			game_mode ^= 1;
+		if (k == KEY_F1)
+			return 1;
+		if (k == KEY_F5)
+			return 0;
+	}
+}
+
+int main(void) {
+	gfx_init();
+	snd_init();
+	while(1) {
+		if (!menu())
+			break;
+		game_loop();
+	}
 	snd_stop_all();
 	gfx_exit();
 	return 0;
