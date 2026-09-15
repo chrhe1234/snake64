@@ -22,7 +22,8 @@
 
 #define	TILE_EMPTY	0x20
 #define	TILE_FOOD	0x53
-#define TILE_HAZARD	0x56
+// #define TILE_HAZARD	0x56
+#define TILE_HAZARD	0x66
 
 // set screen RAM
 void gfx_scr_set(uint8_t value);
