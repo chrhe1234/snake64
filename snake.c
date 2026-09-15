@@ -10,29 +10,26 @@
 // ############################################################### memory layout
 // $0A00-$0BFF code/data
 // $0C00-$0FFF sprites
-// $1000-$1FFF code/data
-// $2000-$27FF charset
-// $2800-$A000 code/date/BSS/heap/stack
+// $1000-$37FF code/data
+// $3800-$4000 charset (not initialized)
+// $4000-$A000 BSS/heap/stack (not intiliazed)
 
 #pragma region(lower1, 0x0a00, 0x0c00, , , {code, data})
 #pragma section(sprites, 0)
 #pragma region(sprites, 0x0c00, 0x1000, , , {sprites})
-#pragma region(lower2, 0x1000, 0x2000, , , {code, data})
+#pragma region(lower2, 0x1000, 0x3800, , , {code, data})
 #pragma section(charset, 0)
-#pragma region(charset, 0x2000, 0x2800, , , {charset})
-#pragma region(main, 0x2800, 0xa000, , , {code, data, bss, heap, stack})
+#pragma region(charset, 0x3800, 0x4000, , , {charset})
+#pragma region(high, 0x4000, 0xa000, , , {bss, heap, stack})
 
 // ############################################################### character set
 
 #pragma data(charset)
-// modified charset, only lowercase/graphics needed
+// modified charset, only lowercase/graphics needed, needs to be set up by gfx_init
 // 94: smaller ball, shrunk version of 81 (e.g. second last bit of snake)
 // 28: even smaller ball, shrunk 94 (e.g. very end of tail)
 // 39: larger ball, expanded 81 (e.g. fat main body)
-
-__export volatile uint8_t charset[2048] = {
-    #embed "charset.bin"
-};
+__export volatile uint8_t charset[2048];
 #pragma data(data)
 
 #define chrout	$ffd2				// chrout ROM address
@@ -986,6 +983,16 @@ uint8_t menu() {
 	gfx_print_xy(2, 4, C64_CYAN, S"F1   START GAME");
 	gfx_print_xy(2, 6, C64_CYAN, S"F3   CHANGE MODE");
 	gfx_print_xy(2, 9, C64_CYAN, S"F5   EXIT");
+	gfx_print_xy(2, 11, SCOLOR1, S"LAST SCORE:");
+	gfx_set_xy(14, 11, SCOLOR1, snake1.score[3] + 48);
+	gfx_set_xy(15, 11, SCOLOR1, snake1.score[2] + 48);
+	gfx_set_xy(16, 11, SCOLOR1, snake1.score[1] + 48);
+	gfx_set_xy(17, 11, SCOLOR1, snake1.score[0] + 48);
+	gfx_print_xy(2, 13, SCOLOR2, S"LAST SCORE:");
+	gfx_set_xy(14, 11, SCOLOR2, snake2.score[3] + 48);
+	gfx_set_xy(15, 11, SCOLOR2, snake2.score[2] + 48);
+	gfx_set_xy(16, 11, SCOLOR2, snake2.score[1] + 48);
+	gfx_set_xy(17, 11, SCOLOR2, snake2.score[0] + 48);
 	while (1) {
 		if (game_mode == PLAYER_VS_PLAYER)
 			gfx_print_xy(2, 7, C64_CYAN, S"     CURRENTLY PLAYER VS. PLAYER");
@@ -1004,6 +1011,7 @@ uint8_t menu() {
 int main(void) {
 	gfx_init();
 	snd_init();
+	snake_init(1);	// just to initilize the score to 0 for menu()
 	while(1) {
 		if (!menu())
 			break;

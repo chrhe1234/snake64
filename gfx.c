@@ -202,6 +202,12 @@ void gfx_clr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca) {
     }
 }
 
+// set screen x,y to color and chr
+void gfx_set_xy(uint8_t cx, uint8_t cy, uint8_t color, uint8_t chr) {
+	gfx_clr_set_xy(cx, cy, color);
+	gfx_scr_set_xy(cx, cy, chr);
+}
+
 uint8_t gfx_old_border = 0;
 uint8_t gfx_old_background = 0;
 
@@ -218,8 +224,75 @@ void gfx_init() {
 		lda     #0
 		sta     $d021
 
-		lda 	#$18			// set charset to $2000
+		lda 	#$1e			// set scr RAM address to 0x0400 and charset address to 0x3800
 		sta 	$d018
+
+		sei						// copy character ROM to 0x3800 before patching it
+		lda 	$01
+		pha
+		and		#$fb        	// enable access to character ROM -> CHAREN = 0
+		sta 	$01
+		ldx 	#0
+	_loop:
+		lda 	$d000,x
+		sta 	$3800,x
+		lda 	$d100,x
+		sta 	$3900,x
+		lda 	$d200,x
+		sta 	$3a00,x
+		lda 	$d300,x
+		sta 	$3b00,x
+		lda 	$d400,x
+		sta 	$3c00,x
+		lda 	$d500,x
+		sta 	$3d00,x
+		lda 	$d600,x
+		sta 	$3e00,x
+		lda 	$d700,x
+		sta 	$3f00,x
+		inx
+		bne		_loop
+		pla						// restore memory configuration
+		sta $01
+		cli
+
+		// set character 94 to $00 $00 $18 $3c $3c $18 $00 $00
+		lda		#$00
+		sta		$3800 + 94 * 8 + 0
+		sta		$3800 + 94 * 8 + 1
+		sta		$3800 + 94 * 8 + 6
+		sta		$3800 + 94 * 8 + 7
+		lda		#$18
+		sta		$3800 + 94 * 8 + 2
+		sta		$3800 + 94 * 8 + 5
+		lda		#$3c
+		sta		$3800 + 94 * 8 + 3
+		sta		$3800 + 94 * 8 + 4
+
+		// set character 28 to $00 $00 $00 $18 $18 $00 $00 $00
+		lda		#$00
+		sta		$3800 + 28 * 8 + 0
+		sta		$3800 + 28 * 8 + 1
+		sta		$3800 + 28 * 8 + 6
+		sta		$3800 + 28 * 8 + 7
+		sta		$3800 + 28 * 8 + 2
+		sta		$3800 + 28 * 8 + 5
+		lda		#$18
+		sta		$3800 + 28 * 8 + 3
+		sta		$3800 + 28 * 8 + 4
+
+		// set character 39 to $3c $7e $ff $ff $ff $ff $7e $3c
+		lda		#$3c
+		sta		$3800 + 39 * 8 + 0
+		sta		$3800 + 39 * 8 + 7
+		lda		#$7e
+		sta		$3800 + 39 * 8 + 1
+		sta		$3800 + 39 * 8 + 6
+		lda		#$ff
+		sta		$3800 + 39 * 8 + 2
+		sta		$3800 + 39 * 8 + 3
+		sta		$3800 + 39 * 8 + 4
+		sta		$3800 + 39 * 8 + 5
 	}
 	gfx_scr_set(0x20);
 	gfx_clr_set(0x01);

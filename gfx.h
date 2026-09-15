@@ -39,6 +39,9 @@ void gfx_clr_set(uint8_t value);
 // set color RAM char at cx, cy to ca
 void gfx_clr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca);
 
+// set screen x,y to color and chr
+void gfx_set_xy(uint8_t cx, uint8_t cy, uint8_t color, uint8_t chr);
+
 // initialize graphics
 void gfx_init();
 

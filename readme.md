@@ -23,7 +23,10 @@
 
 * Cosmetic score feedback: Show brief +1, -1, etc. sprites where points are gained or lost.
 
+
 ## Done
+
+* Character set: Do not embed the whole 2k in the program. Instead copy the charset from ROM to 0x3800 and patch it in place. Reduces the program size by ~ 2k.
 
 * Food system: Implement vsync-based spawn/despawn logic. Limit random placement attempts so spawning cannot get stuck.
 
