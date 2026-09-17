@@ -67,4 +67,10 @@ void gfx_fade_to_black();
 // print the given screen code (!) string to the given location and color
 void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str);
 
+// hide all sprites
+void gfx_spr_hide_all();
+
+// init sprites
+void gfx_spr_init();
+
 #endif

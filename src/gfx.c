@@ -1,4 +1,8 @@
+#include <stdint.h>
+#include <c64/sprites.h>
+
 #include "gfx.h"
+#include "sprites.h"
 #include "utils.h"
 
 #define scrRAMaddr	0x0400
@@ -208,6 +212,17 @@ void gfx_set_xy(uint8_t cx, uint8_t cy, uint8_t color, uint8_t chr) {
 	gfx_scr_set_xy(cx, cy, chr);
 }
 
+void gfx_spr_hide_all() {
+	for (uint8_t i = 0; i < SPR_N; i++)
+		spr_show(i, 0);
+}
+
+void gfx_spr_init() {
+	spr_init((char*) 0x0400);
+	for (uint8_t i = 0; i < SPR_N; i++)
+		spr_set(i, 0, 0, 0, 48, 0, 0, 0, 0);
+}
+
 uint8_t gfx_old_border = 0;
 uint8_t gfx_old_background = 0;
 
@@ -296,6 +311,7 @@ void gfx_init() {
 	}
 	gfx_scr_set(0x20);
 	gfx_clr_set(0x01);
+	gfx_spr_init();
 }
 
 // reset graphics
@@ -362,7 +378,6 @@ void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str) {
 		str++;
       }
 }
-
 
 // wait for scan line 250, end of frame
 void gfx_wait_frame_end() {

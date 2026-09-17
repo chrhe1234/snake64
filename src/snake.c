@@ -784,6 +784,7 @@ typedef struct {
 	uint16_t xpos;			// 0 .. 320 + SPR_OFFSET_X
 	uint8_t xdir;			// 0 = moving left, 1 = moving right
 	uint8_t ypos;			// SPR_OFFSET_Y .. SPR_OFFSET + 200
+	uint8_t animate;		// animation state
 } Event;
 
 Event event[EVENT_N];
@@ -810,8 +811,9 @@ void event_add(enum EventType t) {
 				event[ndx].xdir = 1;
 			} else {
 				event[ndx].xpos = 320 + SPR_OFFSET_X;
-				event[ndx].xdir = 1;
+				event[ndx].xdir = 0;
 			}
+			event[ndx].animate = 0;
 			break;
 	}
 }
@@ -831,8 +833,10 @@ void event_process() {
 							event[i].active = 0;
 					}
 					if (event[i].active) {
-						spr_image(i, 48 + 3);
+						event[i].animate = (++event[i].animate) & 0x0f;
+						spr_image(i, 48 + 3 + (event[i].animate >> 2));
 						spr_show(i, 1);
+						spr_color(i, C64_LIGHT_GREEN);
 						spr_move(i, event[i].xpos, event[i].ypos);
 					} else {
 						spr_show(i, 0);
@@ -963,6 +967,8 @@ void game_loop(void) {
 			gfx_set_xy(i, 24, C64_LIGHT_GRAY, 224);
 		}
 
+		event_init();
+
 		uint8_t advance_counter = 0;
 		uint8_t computer_counter = 0;
 		uint8_t food_counter = 0;
@@ -1038,6 +1044,7 @@ void game_loop(void) {
 			if (stop_pressed())
 				stop++;
 		}
+		gfx_spr_hide_all();
 		gfx_fade_to_black();
 		level = (level + 1) & 0x3f;
 		// no further levels if both snakes are dead
@@ -1089,9 +1096,6 @@ uint8_t game_menu() {
 }
 
 int main(void) {
-	spr_init((char*) 0x0400);
-	for (uint8_t i = 0; i < SPR_N; i++)
-		spr_set(i, 0, 0, 0, 48, 0, 0, 0, 0);
 
 	//	spr_set(0, 1, 150, 150, 48 + 0, 1, 0, 0, 0);
 	//	spr_show(0, 1);
