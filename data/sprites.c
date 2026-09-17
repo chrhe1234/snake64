@@ -1,4 +1,5 @@
-#include sprites.h
+#include <stdint.h>
+#include "sprites.h"
 
 #pragma data(sprites)
 

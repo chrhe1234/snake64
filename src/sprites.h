@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#define SPR_OFFSET_X	24
+#define SPR_OFFSET_Y	50
+#define SPR_N			8
+
 extern volatile uint8_t sprite_data[16][64];
 
 #endif

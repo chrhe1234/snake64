@@ -1,13 +1,13 @@
 #include "gfx.h"
-
-#define chrout		$ffd2				// chrout ROM address
-#define getin		$ffe4				// getin ROM address
+#include "utils.h"
 
 #define scrRAMaddr	0x0400
 #define clrRAMaddr	0xd800
 
 #define scrRAM		((uint8_t*) scrRAMaddr)
 #define clrRAM		((uint8_t*) clrRAMaddr)
+
+// ###############################################################
 
 // screen RAM row address lookup table, low byte
 uint8_t scr_row_low[25] = {
@@ -353,6 +353,17 @@ void gfx_draw_hazard(uint8_t x, uint8_t y) {
 	gfx_clr_set_xy(x, y, C64_LIGHT_RED);
 }
 
+// print a null-terminated string (screen code) at cx, cy in the given color
+void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str) {
+	while (*str) {
+		gfx_scr_set_xy(cx, cy, (uint8_t) *str);
+		gfx_clr_set_xy(cx, cy, color);
+		cx++;
+		str++;
+      }
+}
+
+
 // wait for scan line 250, end of frame
 void gfx_wait_frame_end() {
 	__asm {
@@ -364,27 +375,6 @@ void gfx_wait_frame_end() {
 		cmp		$d012
 		beq		_wait2
 	}
-}
-
-uint8_t gfx_wait_for_key() {
-	__asm {
-	_l1:
-		jsr		getin
-		beq		_l1
-		sta		accu
-		lda		#0
-		sta		accu+1
-	}
-}
-
-// print a null-terminated string (screen code) at cx, cy in the given color
-void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str) {
-	while (*str) {
-		gfx_scr_set_xy(cx, cy, (uint8_t) *str);
-		gfx_clr_set_xy(cx, cy, color);
-		cx++;
-		str++;
-      }
 }
 
 void gfx_fade_to_black() {
@@ -425,6 +415,7 @@ void gfx_fade_to_black() {
 	gfx_wait_frame_end();
 	// gfx_wait_for_key();
 }
+
 
 
 

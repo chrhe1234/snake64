@@ -1,5 +1,11 @@
 #!/bin/python3
+
+#
+# convert the PNGs below into C64 sprites for oscar64 C code
+#
+
 from PIL import Image
+import shutil
 
 filename = "spider3.png"
 
@@ -27,7 +33,8 @@ def png2sprite(filename):
 spriteN = 0
 with open("sprites.c", "w") as f:
     # write header
-    f.write("#include ""sprites.h""\n\n")
+    f.write("#include <stdint.h>\n");
+    f.write("#include \"sprites.h\"\n\n")
     f.write("#pragma data(sprites)\n\n")
     f.write("__export volatile uint8_t sprite_data[16][64] = {\n");
 
@@ -43,6 +50,18 @@ with open("sprites.c", "w") as f:
     f.write(png2sprite("spider3.png") + ",\n\n");
     spriteN += 1
 
+    # write sprites
+    f.write(png2sprite("heart1.png") + ",\n\n");
+    spriteN += 1
+
+    # write sprites
+    f.write(png2sprite("heart2.png") + ",\n\n");
+    spriteN += 1
+
+    # write sprites
+    f.write(png2sprite("heart3.png") + ",\n\n");
+    spriteN += 1
+
     for n in range(spriteN, 16):
         f.write("\t{0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}")
         if n != 15:
@@ -51,3 +70,5 @@ with open("sprites.c", "w") as f:
 
     f.write("};\n");
     f.write("#pragma data(data)\n");
+
+shutil.copy("sprites.c", "../src/sprites.c")

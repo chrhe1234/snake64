@@ -4,6 +4,7 @@
 #include <c64/cia.h>
 #include <c64/sprites.h>
 
+#include "utils.h"
 #include "gfx.h"
 #include "sprites.h"
 #include "snd.h"
@@ -32,9 +33,6 @@
 // 39: larger ball, expanded 81 (e.g. fat main body)
 __export volatile uint8_t charset_memory[2048];
 #pragma bss(bss)
-
-#define chrout	$ffd2				// chrout ROM address
-#define getin	$ffe4				// getin ROM address
 
 #define KEY_F1		133
 #define KEY_F3		134
@@ -527,31 +525,6 @@ void snake_init(uint8_t reset_score) {
 	snake_add(2, 27, 11);
 }
 
-uint8_t wait_for_key() {
-	__asm {
-	_l1:
-		jsr		getin
-		beq		_l1
-		sta		accu
-		lda		#0
-		sta		accu+1
-	}
-}
-
-// wait approximately 100 ms
-void wait_100ms() {
-	__asm {
-		ldx		#80
-	_outer:
-		ldy		#0
-	_inner:
-		dey
-		bne		_inner
-		dex
-		bne		_outer
-	}
-}
-
 // return != 0 when stop key is stop_pressed
 uint8_t stop_pressed() {
 	cia1.pra = 0x7f;
@@ -736,6 +709,8 @@ void snake_computer(uint8_t s) {
 		snake2.direction = nhd;
 }
 
+// ############################################################### food
+
 typedef struct {
 	uint8_t x;
 	uint8_t y;
@@ -795,7 +770,83 @@ void food_check() {
 	}
 }
 
-void draw_hazard(uint8_t config) {
+// ############################################################### events
+
+#define EVENT_N	SPR_N		// = number of simultaneous sprites
+
+enum EventType {
+	HEART
+};
+
+typedef struct {
+	uint8_t active;			// 1 = active, 0 otherwise
+	enum EventType type;
+	uint16_t xpos;			// 0 .. 320 + SPR_OFFSET_X
+	uint8_t xdir;			// 0 = moving left, 1 = moving right
+	uint8_t ypos;			// SPR_OFFSET_Y .. SPR_OFFSET + 200
+} Event;
+
+Event event[EVENT_N];
+
+void event_init() {
+	for (uint8_t i = 0; i < EVENT_N; i++)
+		event[i].active = 0;
+}
+
+void event_add(enum EventType t) {
+	uint8_t ndx = 0;
+	while (event[ndx].active) {
+		ndx++;
+		if (ndx == 8)
+			return;
+	}
+	switch (t) {
+		case HEART:
+			event[ndx].active = 1;
+			event[ndx].type = HEART;
+			event[ndx].ypos = SPR_OFFSET_Y + 10 + (rng_next() & 0x7f) + (rng_next() & 0x1f);
+			if (rng_next() & 1) {
+				event[ndx].xpos = 0;
+				event[ndx].xdir = 1;
+			} else {
+				event[ndx].xpos = 320 + SPR_OFFSET_X;
+				event[ndx].xdir = 1;
+			}
+			break;
+	}
+}
+
+void event_process() {
+	for (uint8_t i = 0; i < EVENT_N; i++) {
+		if (event[i].active) {
+			switch (event[i].type) {
+				case HEART:
+					if (event[i].xdir) {
+						event[i].xpos++;
+						if (event[i].xpos > (SPR_OFFSET_X + 320 - 8))
+							event[i].active = 0;
+					} else {
+						event[i].xpos--;
+						if (event[i].xpos < (SPR_OFFSET_X - 16))
+							event[i].active = 0;
+					}
+					if (event[i].active) {
+						spr_image(i, 48 + 3);
+						spr_show(i, 1);
+						spr_move(i, event[i].xpos, event[i].ypos);
+					} else {
+						spr_show(i, 0);
+					}
+					// check collision with snake head -> consume
+					break;
+			}
+		}
+	}
+}
+
+// ############################################################### game
+
+void game_hazard_map(uint8_t config) {
 	switch(config & 0x03) {
 		case 0:
 			// no obstacles
@@ -871,11 +922,11 @@ void game_loop(void) {
 		for(uint8_t i = 0; i < 50; i++)
 			gfx_wait_frame_end();
 
-		// set zp screen
+		// set up screen
 		gfx_scr_set(32);
 		gfx_clr_set(1);
 		gfx_draw_frame();
-		draw_hazard(level);
+		game_hazard_map(level);
 
 		// set up snakes
 		snake_init(first_level);
@@ -933,6 +984,7 @@ void game_loop(void) {
 				sta		background_color
 			}
 			snd_update();
+			event_process();
 
 			computer_counter++;
 			advance_counter++;
@@ -972,8 +1024,10 @@ void game_loop(void) {
 					level_timer2 = 4;
 					if (level_timer1 == 0)
 						break;
-					else
+					else {
 						level_timer1--;
+						event_add(HEART);
+					}
 				}
 			}
 
@@ -1019,21 +1073,6 @@ uint8_t game_menu() {
 	gfx_set_xy(16, 14, S2_COLOR, snake2.score[1] + 48);
 	gfx_set_xy(17, 14, S2_COLOR, snake2.score[0] + 48);
 
-	spr_init((char*) 0x0400);
-
-	spr_set(0, 1, 150, 150, 48 + 0, 1, 0, 0, 0);
-	spr_show(0, 1);
-	for (int i = 320; i > 0; i--) {
-		gfx_wait_frame_end();
-		gfx_wait_frame_end();
-		gfx_wait_frame_end();
-		gfx_wait_frame_end();
-		gfx_wait_frame_end();
-		gfx_wait_frame_end();
-		spr_image(0, 48 + (i % 3));
-		spr_move(0, i, 150);
-	}
-
 	while (1) {
 		if (game_mode == PLAYER_VS_PLAYER)
 			gfx_print_xy(2, 7, C64_CYAN, S"     CURRENTLY PLAYER VS. PLAYER  ");
@@ -1050,6 +1089,23 @@ uint8_t game_menu() {
 }
 
 int main(void) {
+	spr_init((char*) 0x0400);
+	for (uint8_t i = 0; i < SPR_N; i++)
+		spr_set(i, 0, 0, 0, 48, 0, 0, 0, 0);
+
+	//	spr_set(0, 1, 150, 150, 48 + 0, 1, 0, 0, 0);
+	//	spr_show(0, 1);
+	//	spr_image(0, 48 + (i % 3));
+	//	spr_move(0, i, 150);
+	//	spr_set(0, 1, 150, 150, 48 + 0, 1, 0, 0, 0);
+	//	spr_show(0, 1);
+	//	for (int i = 320; i > 0; i--) {
+	//		gfx_wait_frame_end();
+	//		spr_image(0, 48 + (i % 3));
+	//		spr_move(0, i, 150);
+	//	}
+
+	rng_init();
 	gfx_init();
 	snd_init();
 	snake_init(1);	// just to initilize the score to 0 for menu()
