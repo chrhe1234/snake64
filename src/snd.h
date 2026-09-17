@@ -16,7 +16,11 @@ typedef struct {
     uint8_t duration;    // gate-on duration in frames
 } Sound;
 
+// plays default timer tick sound
 void snd_play_timer_tick();
+
+// plays timer sound with frequency decreased with increased remaining
+void snd_play_timer_tick_n(uint8_t remaining);
 
 void snd_play_collision();
 

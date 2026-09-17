@@ -2,20 +2,21 @@
 #include <stdint.h>
 #include <c64/vic.h>
 #include <c64/cia.h>
+#include <c64/sprites.h>
 
 #include "gfx.h"
 #include "sprites.h"
 #include "snd.h"
 
 // ############################################################### memory layout
-// $0A00-$0BFF code/data
-// $0C00-$0FFF sprites
-// $1000-$37FF code/data
+// $0a00-$0bff code/data
+// $0c00-$0fff sprites
+// $1000-$37ff code/data
 // $3800-$4000 charset (not initialized)
-// $4000-$A000 BSS/heap/stack (not intiliazed)
+// $4000-$a000 BSS/heap/stack (not intiliazed)
 
 #pragma region(lower1, 0x0a00, 0x0c00, , , {code, data})
-#pragma section(sprites, 0)
+#pragma section(sprites, 0, , , data)
 #pragma region(sprites_region, 0x0c00, 0x1000, , , {sprites})
 #pragma region(lower2, 0x1000, 0x3800, , , {code, data})
 #pragma section(charset, 0, , , bss)
@@ -25,7 +26,7 @@
 // ############################################################### character set
 
 #pragma bss(charset)
-// modified charset, not initialized, located at 0x3800, only lowercase/graphics needed, needs to be set up by gfx_init
+// modified charset, not initialized, located at 0x3800, needs to be set up by gfx_init
 // 94: smaller ball, shrunk version of 81 (e.g. second last bit of snake)
 // 28: even smaller ball, shrunk 94 (e.g. very end of tail)
 // 39: larger ball, expanded 81 (e.g. fat main body)
@@ -34,6 +35,10 @@ __export volatile uint8_t charset_memory[2048];
 
 #define chrout	$ffd2				// chrout ROM address
 #define getin	$ffe4				// getin ROM address
+
+#define KEY_F1		133
+#define KEY_F3		134
+#define KEY_F5		135
 
 uint8_t background_color = C64_BLACK;
 
@@ -134,6 +139,7 @@ void snake_reset(uint8_t s, uint8_t reset_score) {
 	}
 }
 
+// increase score, "pedestrian" version, 9999 = max score
 void snake_inc_score(uint8_t s) {
 	if (s == 1) {
 		snake1.score[0]++;
@@ -147,7 +153,10 @@ void snake_inc_score(uint8_t s) {
 					snake1.score[2] = 0;
 					snake1.score[3]++;
 					if (snake1.score[3] >= 10) {
-						snake1.score[3] = 0;
+						snake1.score[0] = 9;
+						snake1.score[1] = 9;
+						snake1.score[2] = 9;
+						snake1.score[3] = 9;
 					}
 				}
 			}
@@ -166,7 +175,10 @@ void snake_inc_score(uint8_t s) {
 					snake2.score[2] = 0;
 					snake2.score[3]++;
 					if (snake2.score[3] >= 10) {
-						snake2.score[3] = 0;
+						snake2.score[0] = 9;
+						snake2.score[1] = 9;
+						snake2.score[2] = 9;
+						snake2.score[3] = 9;
 					}
 				}
 			}
@@ -175,6 +187,7 @@ void snake_inc_score(uint8_t s) {
 	}
 }
 
+// decrease score, "pedestrian" version
 void snake_dec_score(uint8_t s) {
 	if (s == 1) {
 		if (snake1.score[0] == 0 && snake1.score[1] == 0 && snake1.score[2] == 0 && snake1.score[3] == 0)
@@ -810,6 +823,7 @@ void draw_hazard(uint8_t config) {
 				gfx_draw_hazard(8, 17 - 3 + i);
 				gfx_draw_hazard(31, 17 - 3 + i);
 			}
+			break;
 		case 3:
 			// four blocks
 			for (uint8_t x = 0; x <= 7; x++) {
@@ -903,8 +917,8 @@ void game_loop(void) {
 		uint8_t food_counter = 0;
 		uint8_t level_timer_counter = 0;
 
-		uint8_t level_timer1 = 9;
-		uint8_t level_timer2 = 4;
+		uint8_t level_timer1 = 9;			// 9 main ticks, do not change
+		uint8_t level_timer2 = 4;			// 4 sub ticks, do not change
 
 		while (!stop) {
 			gfx_wait_frame_end();
@@ -953,7 +967,7 @@ void game_loop(void) {
 				level_timer_counter = 0;
 				level_timer2--;
 				gfx_scr_set_xy(15 + level_timer1, 24, level_timer_char[level_timer2]);
-				snd_play_timer_tick();
+				snd_play_timer_tick_n(level_timer1 * 4 + level_timer2);
 				if (level_timer2 == 0) {
 					level_timer2 = 4;
 					if (level_timer1 == 0)
@@ -979,11 +993,15 @@ void game_loop(void) {
 	}
 }
 
-#define KEY_F1		133
-#define KEY_F3		134
-#define KEY_F5		135
+void game_over() {
+	gfx_clr_set(C64_BLACK);
+	gfx_scr_set(32);
+	gfx_print_xy(15, 11, C64_LIGHT_RED, S"GAME OVER");
+	for (uint8_t i = 0; i < 100; i++)
+		gfx_wait_frame_end();
+}
 
-uint8_t menu() {
+uint8_t game_menu() {
 	gfx_clr_set(C64_BLACK);
 	gfx_scr_set(32);
 	gfx_print_xy(2, 2, C64_GREEN, S"MENU");
@@ -1000,6 +1018,22 @@ uint8_t menu() {
 	gfx_set_xy(15, 14, S2_COLOR, snake2.score[2] + 48);
 	gfx_set_xy(16, 14, S2_COLOR, snake2.score[1] + 48);
 	gfx_set_xy(17, 14, S2_COLOR, snake2.score[0] + 48);
+
+	spr_init((char*) 0x0400);
+
+	spr_set(0, 1, 150, 150, 48 + 0, 1, 0, 0, 0);
+	spr_show(0, 1);
+	for (int i = 320; i > 0; i--) {
+		gfx_wait_frame_end();
+		gfx_wait_frame_end();
+		gfx_wait_frame_end();
+		gfx_wait_frame_end();
+		gfx_wait_frame_end();
+		gfx_wait_frame_end();
+		spr_image(0, 48 + (i % 3));
+		spr_move(0, i, 150);
+	}
+
 	while (1) {
 		if (game_mode == PLAYER_VS_PLAYER)
 			gfx_print_xy(2, 7, C64_CYAN, S"     CURRENTLY PLAYER VS. PLAYER  ");
@@ -1020,9 +1054,10 @@ int main(void) {
 	snd_init();
 	snake_init(1);	// just to initilize the score to 0 for menu()
 	while(1) {
-		if (!menu())
+		if (!game_menu())
 			break;
 		game_loop();
+		game_over();
 	}
 	snd_stop_all();
 	gfx_exit();

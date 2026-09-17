@@ -6,9 +6,7 @@
 
 ## To-Do
 
-* Time blips should increase their frequency as time is counted down.
-
-* There should be some game over screen.
+* Time blips should increase their frequency as time is counted down. And at the very end, there should be a slightly longer higher tone that signals the end of the level.
 
 * Wrap CIA access by sei/cli so they cannot be interrupted.
 
@@ -22,6 +20,8 @@
 
 
 ## Done
+
+* There should be some game over screen.
 
 * Hazard consequences: Decrease score when a hazard is encountered. Add clear visual/audio feedback for the penalty.
 

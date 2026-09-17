@@ -15,6 +15,7 @@ void snd_stop_all(void) {
         snd_state[i].ctrl = 0;
         snd_state[i].frames = 0;
     }
+    sid.fmodevol = 0;					// all off
 }
 
 void snd_init(void) {
@@ -76,8 +77,8 @@ const Sound sound_bounce = {
     .duration = 12
 };
 
-// sound for timer blips
-const Sound sound_blip = {
+// sound for timer blips, frequency will be modified
+Sound sound_blip = {
     .freq     = 0x2000,
     .pwm      = 0x0000,
     .ctrl     = SID_CTRL_TRI,
@@ -116,6 +117,12 @@ void wait_frame(void) {
 }
 
 void snd_play_timer_tick() {
+	sound_blip.freq = 0x2000;
+	snd_play(2, &sound_blip);
+}
+
+void snd_play_timer_tick_n(uint8_t remaining) {
+	sound_blip.freq = 0x3000 - ((uint16_t) remaining) * 128;
 	snd_play(2, &sound_blip);
 }
 
