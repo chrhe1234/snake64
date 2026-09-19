@@ -40,15 +40,6 @@ __export volatile uint8_t charset_memory[2048];
 
 uint8_t background_color = C64_BLACK;
 
-// define snake part character ids
-#define SP_HEAD		87
-#define	SP_BODY		39
-#define	SP_TAIL1	81
-#define SP_TAIL2	94
-#define	SP_EMPTY	32
-
-#define S1_COLOR		C64_LIGHT_GREEN
-#define	S2_COLOR		C64_LIGHT_BLUE
 
 // snake direction flags (do not change, those values are assumed in several places)
 #define	SDIR_UP		0
@@ -286,19 +277,23 @@ __noinline uint8_t dec8(uint8_t v) {
 // draw head of the snake (1st two pieces)
 void snake_draw_head(uint8_t s) {
 	if (s == 1) {
-		gfx_scr_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], SP_HEAD);
-		gfx_clr_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], S1_COLOR);
+		// gfx_scr_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], SP_HEAD);
+		// gfx_clr_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], S1_COLOR);
+		gfx_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], S1_COLOR, SP_HEAD);
 		uint8_t p = dec8(snake1.start);
-		gfx_scr_set_xy(snake1.x[p], snake1.y[p], SP_BODY);
-		gfx_clr_set_xy(snake1.x[p], snake1.y[p], S1_COLOR);
+		// gfx_scr_set_xy(snake1.x[p], snake1.y[p], SP_BODY);
+		// gfx_clr_set_xy(snake1.x[p], snake1.y[p], S1_COLOR);
+		gfx_set_xy(snake1.x[p], snake1.y[p], S1_COLOR, SP_BODY);
 		return;
 	}
 	if (s == 2) {
-		gfx_scr_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], SP_HEAD);
-		gfx_clr_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], S2_COLOR);
+		// gfx_scr_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], SP_HEAD);
+		// gfx_clr_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], S2_COLOR);
+		gfx_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], S2_COLOR, SP_HEAD);
 		uint8_t p = dec8(snake2.start);
-		gfx_scr_set_xy(snake2.x[p], snake2.y[p], SP_BODY);
-		gfx_clr_set_xy(snake2.x[p], snake2.y[p], S2_COLOR);
+		// gfx_scr_set_xy(snake2.x[p], snake2.y[p], SP_BODY);
+		// gfx_clr_set_xy(snake2.x[p], snake2.y[p], S2_COLOR);
+		gfx_set_xy(snake2.x[p], snake2.y[p], S2_COLOR, SP_BODY);
 		return;
 	}
 }
@@ -306,28 +301,34 @@ void snake_draw_head(uint8_t s) {
 // draw tail of the snake (last two pieces and a final erase if necessary)
 void snake_draw_tail(uint8_t s) {
 	if (s == 1) {
-		gfx_scr_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], SP_TAIL2);
-		gfx_clr_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], S1_COLOR);
+		// gfx_scr_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], SP_TAIL2);
+		// gfx_clr_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], S1_COLOR);
+		gfx_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], S1_COLOR, SP_TAIL2);
 		uint8_t p1 = inc8(snake1.end);
-		gfx_scr_set_xy(snake1.x[p1], snake1.y[p1], SP_TAIL1);
-		gfx_clr_set_xy(snake1.x[p1], snake1.y[p1], S1_COLOR);
+		// gfx_scr_set_xy(snake1.x[p1], snake1.y[p1], SP_TAIL1);
+		// gfx_clr_set_xy(snake1.x[p1], snake1.y[p1], S1_COLOR);
+		gfx_set_xy(snake1.x[p1], snake1.y[p1], S1_COLOR, SP_TAIL1);
 		uint8_t p2 = dec8(snake1.end);
 		if (snake1.x[p2] != 0xff) {
-			gfx_scr_set_xy(snake1.x[p2], snake1.y[p2], SP_EMPTY);
-			gfx_clr_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR);
+			// gfx_scr_set_xy(snake1.x[p2], snake1.y[p2], SP_EMPTY);
+			// gfx_clr_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR);
+			gfx_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR, SP_EMPTY);
 		}
 		return;
 	}
 	if (s == 2) {
-		gfx_scr_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], SP_TAIL2);
-		gfx_clr_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], S2_COLOR);
+		// gfx_scr_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], SP_TAIL2);
+		// gfx_clr_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], S2_COLOR);
+		gfx_set_xy(snake2.x[snake1.end], snake2.y[snake1.end], S2_COLOR, SP_TAIL2);
 		uint8_t p1 = inc8(snake2.end);
-		gfx_scr_set_xy(snake2.x[p1], snake2.y[p1], SP_TAIL1);
-		gfx_clr_set_xy(snake2.x[p1], snake2.y[p1], S2_COLOR);
+		// gfx_scr_set_xy(snake2.x[p1], snake2.y[p1], SP_TAIL1);
+		// gfx_clr_set_xy(snake2.x[p1], snake2.y[p1], S2_COLOR);
+		gfx_set_xy(snake2.x[p1], snake2.y[p1], S2_COLOR, SP_TAIL1);
 		uint8_t p2 = dec8(snake2.end);
 		if (snake2.x[p2] != 0xff) {
-			gfx_scr_set_xy(snake2.x[p2], snake2.y[p2], SP_EMPTY);
-			gfx_clr_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR);
+			// gfx_scr_set_xy(snake2.x[p2], snake2.y[p2], SP_EMPTY);
+			// gfx_clr_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR);
+			gfx_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR, SP_EMPTY);
 		}
 		return;
 	}
@@ -693,7 +694,7 @@ void snake_computer(uint8_t s) {
 					}
 				}
 			}
-			int score = empty + food - hazard + (rand() & 0x03) + 2 * empty_ahead;
+			int score = empty + food - hazard + (rng_next() & 0x03) + 2 * empty_ahead;
 			if (i == hd)
 				score += SDIR_STICKINESS;	// bias towards keeping the current direction
 			if (score > max_score) {		// track maximum score and store new head direction
@@ -747,12 +748,12 @@ void food_check() {
 		if (food[i].active == FOOD_INACTIVE) {
 			// food inactive -> spawn
 			for (uint8_t j = 0; j < FOOD_SPAWN_TRIES; j++) {
-				uint8_t x = 1 + (rand() & 0x1f) + (rand() & 0x03) * 2;	// random number between 1 and 38
-				uint8_t y = 1 + (rand() & 0x0f) + (rand() & 0x03) * 2;	// random number between 1 and 22, a bit crude
+				uint8_t x = 1 + (rng_next() & 0x1f) + (rng_next() & 0x03) * 2;	// random number between 1 and 38
+				uint8_t y = 1 + (rng_next() & 0x0f) + (rng_next() & 0x03) * 2;	// random number between 1 and 22, a bit crude
 				if (gfx_scr_get_xy(x, y) == TILE_EMPTY) {
 					food[i].x = x;
 					food[i].y = y;
-					food[i].age = FOOD_DURATION + (rand() % FOOD_DURATION);
+					food[i].age = FOOD_DURATION + (rng_next() % FOOD_DURATION);
 					food[i].active = 1;
 					gfx_draw_food(x, y);
 					break;
@@ -794,6 +795,7 @@ void event_init() {
 		event[i].active = 0;
 }
 
+// add the given event type if a slot is available
 void event_add(enum EventType t) {
 	uint8_t ndx = 0;
 	while (event[ndx].active) {
@@ -818,6 +820,7 @@ void event_add(enum EventType t) {
 	}
 }
 
+// process all events including display updates, call once per frame
 void event_process() {
 	for (uint8_t i = 0; i < EVENT_N; i++) {
 		if (event[i].active) {
@@ -848,7 +851,7 @@ void event_process() {
 	}
 }
 
-// ############################################################### game
+// ############################################################### game core routines
 
 void game_hazard_map(uint8_t config) {
 	switch(config & 0x03) {
@@ -907,6 +910,8 @@ uint8_t game_mode = PLAYER_VS_PLAYER;
 
 const uint8_t level_timer_char[] = {32, 101, 97, 234, 224};
 
+char level_str[] = S"LEVEL ##";
+
 void game_loop(void) {
 	uint8_t first_level = 1;		// first level of the game, only reset
 	uint8_t level = 0;				// current level (0..63)
@@ -916,13 +921,10 @@ void game_loop(void) {
 		// display current level for one seconds
 		gfx_scr_set(32);
 		gfx_clr_set(1);
-		gfx_scr_set_xy(16, 12, 12);
-		gfx_scr_set_xy(17, 12, 5);
-		gfx_scr_set_xy(18, 12, 22);
-		gfx_scr_set_xy(19, 12, 5);
-		gfx_scr_set_xy(20, 12, 12);
-		gfx_scr_set_xy(22, 12, (uint8_t) (((level + 1) / 10) + 48));
-		gfx_scr_set_xy(23, 12, (uint8_t) (((level + 1) % 10) + 48));
+
+		level_str[6] = ((level + 1) / 10) + 48;
+		level_str[7] = ((level + 1) % 10) + 48;
+		gfx_print_xy(16, 12, C64_WHITE, level_str);
 		for(uint8_t i = 0; i < 50; i++)
 			gfx_wait_frame_end();
 
@@ -978,10 +980,14 @@ void game_loop(void) {
 		uint8_t level_timer2 = 4;			// 4 sub ticks, do not change
 
 		while (!stop) {
-			gfx_wait_frame_end();
+			// sound update, just before the end-of-frame wait, no graphics involved
+			snd_update();
+			// read player controls, just before the end-of-frame wait, no graphics involved
 			snake_control(1);
 			if (game_mode == PLAYER_VS_PLAYER)
 				snake_control(2);
+
+			gfx_wait_frame_end();
 			__asm {							// update background color and reset to black for next frame
 				lda		background_color
 	//			sta     $d020           	// set border color
@@ -989,8 +995,7 @@ void game_loop(void) {
 				lda		#C64_BLACK
 				sta		background_color
 			}
-			snd_update();
-			event_process();
+			event_process();				// update events and their sprites
 
 			computer_counter++;
 			advance_counter++;
@@ -1065,26 +1070,39 @@ void game_over() {
 uint8_t game_menu() {
 	gfx_clr_set(C64_BLACK);
 	gfx_scr_set(32);
-	gfx_print_xy(2, 2, C64_GREEN, S"MENU");
-	gfx_print_xy(2, 4, C64_CYAN, S"F1   START GAME");
-	gfx_print_xy(2, 6, C64_CYAN, S"F3   CHANGE MODE");
-	gfx_print_xy(2, 9, C64_CYAN, S"F5   EXIT");
-	gfx_print_xy(2, 12, S1_COLOR, S"LAST SCORE:");
-	gfx_set_xy(14, 12, S1_COLOR, snake1.score[3] + 48);
-	gfx_set_xy(15, 12, S1_COLOR, snake1.score[2] + 48);
-	gfx_set_xy(16, 12, S1_COLOR, snake1.score[1] + 48);
-	gfx_set_xy(17, 12, S1_COLOR, snake1.score[0] + 48);
-	gfx_print_xy(2, 14, S2_COLOR, S"LAST SCORE:");
-	gfx_set_xy(14, 14, S2_COLOR, snake2.score[3] + 48);
-	gfx_set_xy(15, 14, S2_COLOR, snake2.score[2] + 48);
-	gfx_set_xy(16, 14, S2_COLOR, snake2.score[1] + 48);
-	gfx_set_xy(17, 14, S2_COLOR, snake2.score[0] + 48);
+	gfx_draw_snake_logo();
+	gfx_print_xy(0, 9, C64_WHITE, S"MENU");
+	gfx_print_xy(2, 11, C64_LIGHT_GRAY, S"F1   START GAME");
+	gfx_print_xy(2, 13, C64_LIGHT_GRAY, S"F3   CHANGE MODE");
+	gfx_print_xy(2, 17, C64_LIGHT_GRAY, S"F5   EXIT");
+	gfx_print_xy(0, 20, C64_WHITE, S"LAST SCORES");
+	gfx_set_xy(2+0, 22, S1_COLOR, SP_TAIL2);
+	gfx_set_xy(2+1, 22, S1_COLOR, SP_TAIL1);
+	gfx_set_xy(2+2, 22, S1_COLOR, SP_BODY);
+	gfx_set_xy(2+3, 22, S1_COLOR, SP_BODY);
+	gfx_set_xy(2+4, 22, S1_COLOR, SP_BODY);
+	gfx_set_xy(2+5, 22, S1_COLOR, SP_HEAD);
+	gfx_set_xy(2+0, 24, S2_COLOR, SP_TAIL2);
+	gfx_set_xy(2+1, 24, S2_COLOR, SP_TAIL1);
+	gfx_set_xy(2+2, 24, S2_COLOR, SP_BODY);
+	gfx_set_xy(2+3, 24, S2_COLOR, SP_BODY);
+	gfx_set_xy(2+4, 24, S2_COLOR, SP_BODY);
+	gfx_set_xy(2+5, 24, S2_COLOR, SP_HEAD);
+	gfx_set_xy(14, 22, S1_COLOR, snake1.score[3] + 48);
+	gfx_set_xy(15, 22, S1_COLOR, snake1.score[2] + 48);
+	gfx_set_xy(16, 22, S1_COLOR, snake1.score[1] + 48);
+	gfx_set_xy(17, 22, S1_COLOR, snake1.score[0] + 48);
+	gfx_set_xy(14, 24, S2_COLOR, snake2.score[3] + 48);
+	gfx_set_xy(15, 24, S2_COLOR, snake2.score[2] + 48);
+	gfx_set_xy(16, 24, S2_COLOR, snake2.score[1] + 48);
+	gfx_set_xy(17, 24, S2_COLOR, snake2.score[0] + 48);
 
 	while (1) {
+		gfx_print_xy(2+0, 15, C64_LIGHT_GRAY, S"     CURRENTLY PLAYER VS. ");
 		if (game_mode == PLAYER_VS_PLAYER)
-			gfx_print_xy(2, 7, C64_CYAN, S"     CURRENTLY PLAYER VS. PLAYER  ");
+			gfx_print_xy(2+26, 15, C64_LIGHT_GRAY, S"PLAYER  ");
 		else
-			gfx_print_xy(2, 7, C64_CYAN, S"     CURRENTLY PLAYER VS. COMPUTER");
+			gfx_print_xy(2+26, 15, C64_LIGHT_GRAY, S"COMPUTER");
 		uint8_t k = wait_for_key();
 		if (k == KEY_F3)
 			game_mode ^= 1;
@@ -1096,19 +1114,6 @@ uint8_t game_menu() {
 }
 
 int main(void) {
-
-	//	spr_set(0, 1, 150, 150, 48 + 0, 1, 0, 0, 0);
-	//	spr_show(0, 1);
-	//	spr_image(0, 48 + (i % 3));
-	//	spr_move(0, i, 150);
-	//	spr_set(0, 1, 150, 150, 48 + 0, 1, 0, 0, 0);
-	//	spr_show(0, 1);
-	//	for (int i = 320; i > 0; i--) {
-	//		gfx_wait_frame_end();
-	//		spr_image(0, 48 + (i % 3));
-	//		spr_move(0, i, 150);
-	//	}
-
 	rng_init();
 	gfx_init();
 	snd_init();

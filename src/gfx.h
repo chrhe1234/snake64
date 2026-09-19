@@ -25,6 +25,17 @@
 // #define TILE_HAZARD	0x56
 #define TILE_HAZARD	0x66
 
+// define snake part character ids
+#define SP_HEAD		87
+#define	SP_BODY		39
+#define	SP_TAIL1	81
+#define SP_TAIL2	94
+#define	SP_EMPTY	32
+
+// define snake colors
+#define S1_COLOR		C64_LIGHT_GREEN
+#define	S2_COLOR		C64_LIGHT_BLUE
+
 // set screen RAM
 void gfx_scr_set(uint8_t value);
 
@@ -72,5 +83,7 @@ void gfx_spr_hide_all();
 
 // init sprites
 void gfx_spr_init();
+
+void gfx_draw_snake_logo();
 
 #endif

@@ -10,7 +10,7 @@
 
 * Wrap CIA access by sei/cli so they cannot be interrupted.
 
-* Levels: Create obstacle layouts with progressively more difficult navigation. Decide how hazards are incorporated into level design.
+* Levels: Create obstacle layouts with progressively more difficult navigation. Decide how hazards are incorporated into level design. Corridors could be added. Maybe also 8 or more L-type shapes.
 
 * Sprite-based gameplay additions: Add a snake-shortening predator that attacks a snake and removes tail segments. Add temporary bonus food/rewards that appear occasionally and give a larger reward than normal food.
 

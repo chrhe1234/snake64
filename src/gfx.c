@@ -144,6 +144,21 @@ void gfx_scr_set(uint8_t value) {
 	}
 }
 
+// set color RAM
+void gfx_clr_set(uint8_t value) {
+	__asm {
+		lda value
+		ldx #$00
+	loop:
+		sta $d800,x
+		sta $d900,x
+		sta $da00,x
+		sta $dae8,x
+		inx
+		bne loop
+	}
+}
+
 // set screen RAM char at cx, cy to ca
 void gfx_scr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca) {
 	__asm {
@@ -176,21 +191,6 @@ uint8_t gfx_scr_get_xy(uint8_t cx, uint8_t cy) {
 	}
 }
 
-// set color RAM
-void gfx_clr_set(uint8_t value) {
-	__asm {
-		lda value
-		ldx #$00
-	loop:
-		sta $d800,x
-		sta $d900,x
-		sta $da00,x
-		sta $dae8,x
-		inx
-		bne loop
-	}
-}
-
 // set color RAM char at cx, cy to ca
 void gfx_clr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca) {
 	__asm {
@@ -208,14 +208,46 @@ void gfx_clr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca) {
 
 // set screen x,y to color and chr
 void gfx_set_xy(uint8_t cx, uint8_t cy, uint8_t color, uint8_t chr) {
-	gfx_clr_set_xy(cx, cy, color);
-	gfx_scr_set_xy(cx, cy, chr);
+	__asm {
+		ldy     cy
+		lda		scr_row_low,y
+		sta		_store1+1
+		lda		scr_row_high,y
+		sta		_store1+2
+		lda		chr
+		ldx     cx
+	_store1:
+		sta		$ffff,x				// modified to actual screen buffer address
+
+		ldy     cy
+		lda		clr_row_low,y
+		sta		_store2+1
+		lda		clr_row_high,y
+		sta		_store2+2
+		lda		color
+		ldx     cx
+	_store2:
+		sta		$ffff,x				// modified to actual color buffer address
+    }
 }
 
-void gfx_spr_hide_all() {
-	for (uint8_t i = 0; i < SPR_N; i++)
-		spr_show(i, 0);
+// print a null-terminated string (screen code) at cx, cy in the given color
+void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str) {
+	while (*str) {
+		gfx_set_xy(cx, cy, color, (uint8_t) *str);
+		cx++;
+		str++;
+      }
 }
+
+// hide all sprites
+void gfx_spr_hide_all() {
+//	for (uint8_t i = 0; i < SPR_N; i++)
+//		spr_show(i, 0);
+	vic.spr_enable = 0x00;
+}
+
+// ############################################################### initialize and reset
 
 void gfx_spr_init() {
 	spr_init((char*) 0x0400);
@@ -316,6 +348,7 @@ void gfx_init() {
 
 // reset graphics
 void gfx_exit() {
+	gfx_spr_hide_all();
 	__asm {
 		lda     gfx_old_border          // restore border color
 		sta     $d020
@@ -369,16 +402,6 @@ void gfx_draw_hazard(uint8_t x, uint8_t y) {
 	gfx_clr_set_xy(x, y, C64_LIGHT_RED);
 }
 
-// print a null-terminated string (screen code) at cx, cy in the given color
-void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str) {
-	while (*str) {
-		gfx_scr_set_xy(cx, cy, (uint8_t) *str);
-		gfx_clr_set_xy(cx, cy, color);
-		cx++;
-		str++;
-      }
-}
-
 // wait for scan line 250, end of frame
 void gfx_wait_frame_end() {
 	__asm {
@@ -429,6 +452,48 @@ void gfx_fade_to_black() {
 	gfx_wait_frame_end();
 	gfx_wait_frame_end();
 	// gfx_wait_for_key();
+}
+
+const uint8_t logo_scr[] = {
+	32, SP_BODY, SP_BODY, SP_BODY, 32, 32, SP_BODY, 32, 32, 32, SP_HEAD, 32, 32, SP_BODY, SP_BODY, SP_BODY, 32, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, SP_BODY, SP_BODY, SP_HEAD, 32, 32, SP_BODY, SP_BODY, SP_BODY, 32, 32, 32, 32, 32, SP_BODY, 32,
+
+	SP_BODY, 32, 32, 32, SP_HEAD, 32, SP_BODY, SP_BODY, 32, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, 32, 32, SP_BODY, 32, 32, SP_BODY, 32, 32, 32, 32, SP_BODY, 32, 32, 32, SP_HEAD, 32, 32, 32, SP_BODY, SP_BODY, 32,
+
+	SP_BODY, 32, 32, 32, 32, 32, SP_BODY, SP_BODY, SP_BODY, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, 32, 32, 32, SP_BODY, 32, 32, 32, 32, 32, 32, SP_BODY, 32, SP_BODY, 32,
+
+	32, SP_BODY, SP_BODY, SP_BODY, 32, 32, SP_BODY, 32, SP_BODY, 32, SP_BODY, 32, SP_BODY, SP_BODY, SP_BODY, SP_BODY, SP_BODY, 32, SP_BODY, SP_BODY, 32, 32, 32, 32, SP_BODY, SP_BODY, SP_BODY, SP_BODY, 32, SP_BODY, SP_TAIL2, SP_TAIL1, SP_BODY, 32, 32, SP_BODY, 32, 32, SP_BODY, 32,
+
+	32, 32, 32, 32, SP_BODY, 32, SP_BODY, 32, 32, SP_BODY, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, 32, 32, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, SP_BODY, SP_BODY, SP_BODY, SP_HEAD,
+
+	SP_TAIL2, 32, 32, 32, SP_BODY, 32, SP_TAIL1, 32, 32, SP_BODY, SP_BODY, 32, SP_TAIL1, 32, 32, 32, SP_BODY, 32, SP_TAIL1, 32, 32, SP_BODY, 32, 32, SP_BODY, 32, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, 32, 32, 32, SP_TAIL1, 32,
+
+	32, SP_TAIL1, SP_BODY, SP_BODY, 32, 32, SP_TAIL2, 32, 32, 32, SP_BODY, 32, SP_TAIL2, 32, 32, 32, SP_HEAD, 32, SP_TAIL2, 32, 32, 32, SP_HEAD, 32, SP_BODY, SP_BODY, SP_TAIL1, SP_TAIL2, 32, 32, SP_BODY, SP_BODY, SP_BODY, SP_BODY, 32, 32, 32, 32, SP_TAIL2, 32
+};
+
+const uint8_t logo_clr[] = {
+	0x00, 0x0d, 0x0d, 0x0d, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x07, 0x07, 0x07, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x03, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00,
+
+	0x0d, 0x00, 0x00, 0x00, 0x0d, 0x00, 0x03, 0x03, 0x00, 0x00, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x00, 0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x0a, 0x0a, 0x00,
+
+	0x0d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03, 0x00, 0x00, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0a, 0x00,
+
+	0x00, 0x0d, 0x0d, 0x0d, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x07, 0x07, 0x07, 0x07, 0x07, 0x00, 0x05, 0x05, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x03, 0x03, 0x03, 0x03, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x0a, 0x00,
+
+	0x00, 0x00, 0x00, 0x00, 0x0d, 0x00, 0x03, 0x00, 0x00, 0x03, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a,
+
+	0x0d, 0x00, 0x00, 0x00, 0x0d, 0x00, 0x03, 0x00, 0x00, 0x03, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x00, 0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00,
+
+	0x00, 0x0d, 0x0d, 0x0d, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x03, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00
+};
+
+void gfx_draw_snake_logo() {
+	int ndx = 0;
+	for (uint8_t y = 0; y < 7; y++) {
+		for (uint8_t x = 0; x < 40; x++) {
+			gfx_set_xy(x, y, logo_clr[ndx], logo_scr[ndx]);
+			ndx++;
+		}
+	}
 }
 
 
