@@ -22,7 +22,6 @@
 
 #define	TILE_EMPTY	0x20
 #define	TILE_FOOD	0x53
-// #define TILE_HAZARD	0x56
 #define TILE_HAZARD	0x66
 
 // define snake part character ids
@@ -60,8 +59,8 @@ void gfx_init();
 // reset graphics
 void gfx_exit();
 
-// draw playground frame
-void gfx_draw_frame();
+// set up game screen
+void gfx_setup_game_screen();
 
 // draw/put food on the playing field
 void gfx_draw_food(uint8_t x, uint8_t y);
@@ -84,6 +83,10 @@ void gfx_spr_hide_all();
 // init sprites
 void gfx_spr_init();
 
+// display the snake menu logo
 void gfx_draw_snake_logo();
+
+// print the score or both snakes on the screen
+void gfx_update_score();
 
 #endif

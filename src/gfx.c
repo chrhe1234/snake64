@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <c64/sprites.h>
 
+#include "snake.h"
 #include "gfx.h"
 #include "sprites.h"
 #include "utils.h"
@@ -257,20 +258,23 @@ void gfx_spr_init() {
 
 uint8_t gfx_old_border = 0;
 uint8_t gfx_old_background = 0;
+uint8_t gfx_old_d018 = 0;
 
 // initialize graphics
 void gfx_init() {
 	__asm {
-		lda     $d020           // safe old border color and set to black
+		lda     $d020           // save old border color and set to black
 		sta     gfx_old_border
 		lda     #0
 		sta     $d020
 
-		lda     $d021           // safe old background color and set to black
+		lda     $d021           // save old background color and set to black
 		sta     gfx_old_background
 		lda     #0
 		sta     $d021
 
+		lda		$d018			// save old config
+		sta		gfx_old_d018
 		lda 	#$1e			// set scr RAM address to 0x0400 and charset address to 0x3800
 		sta 	$d018
 
@@ -350,6 +354,9 @@ void gfx_init() {
 void gfx_exit() {
 	gfx_spr_hide_all();
 	__asm {
+		lda		gfx_old_d018			// restore character and screen addresses
+		sta 	$d018
+
 		lda     gfx_old_border          // restore border color
 		sta     $d020
 
@@ -363,43 +370,60 @@ void gfx_exit() {
 
 #define FRAME_COLOR		C64_LIGHT_RED
 
-// draw playground frame
-void gfx_draw_frame() {
+// set up game screen
+void gfx_setup_game_screen() {
+	// clear all
+	gfx_scr_set(32);
+	gfx_clr_set(1);
+
+	// draw frame
 	gfx_scr_set_xy(0, 0, 85);
 	gfx_clr_set_xy(0, 0, FRAME_COLOR);
 	gfx_scr_set_xy(39, 0, 73);
 	gfx_clr_set_xy(39, 0, FRAME_COLOR);
-
 	gfx_scr_set_xy(0, 23, 74);
 	gfx_clr_set_xy(0, 23, FRAME_COLOR);
 	gfx_scr_set_xy(39, 23, 75);
 	gfx_clr_set_xy(39, 23, FRAME_COLOR);
-
 	for(uint8_t i = 1; i < 23; i++) {
 		gfx_scr_set_xy(0, i, 66);
 		gfx_scr_set_xy(39, i, 66);
 		gfx_clr_set_xy(0, i, FRAME_COLOR);
 		gfx_clr_set_xy(39, i, FRAME_COLOR);
 	}
-
 	for(uint8_t i = 1; i < 39; i++) {
 		gfx_scr_set_xy(i, 0, 67);
 		gfx_scr_set_xy(i, 23, 67);
 		gfx_clr_set_xy(i, 0, FRAME_COLOR);
 		gfx_clr_set_xy(i, 23, FRAME_COLOR);
 	}
+
+	// set color for score of snake 1 + 2
+	for(uint8_t i = 0; i < 4; i++) {
+		gfx_clr_set_xy(1 + i, 24, S1_COLOR);
+		gfx_clr_set_xy(35 + i, 24, S2_COLOR);
+	}
+
+	// set up timer indicator
+	gfx_print_xy(10, 24, C64_WHITE, S"TIME");
+	gfx_set_xy(14, 24, C64_WHITE, 118);
+	for (uint8_t i = 15; i <= 24; i++) {
+		gfx_set_xy(i, 24, C64_LIGHT_GRAY, 224);
+	}
 }
 
 // draw/put food on the playing field
 void gfx_draw_food(uint8_t x, uint8_t y) {
-	gfx_scr_set_xy(x, y, TILE_FOOD);
-	gfx_clr_set_xy(x, y, C64_GREEN);
+	// gfx_scr_set_xy(x, y, TILE_FOOD);
+	// gfx_clr_set_xy(x, y, C64_GREEN);
+	gfx_set_xy(x, y, C64_PURPLE, TILE_FOOD);
 }
 
-// draw/put food on the playing field
+// draw/put hazard on the playing field
 void gfx_draw_hazard(uint8_t x, uint8_t y) {
-	gfx_scr_set_xy(x, y, TILE_HAZARD);
-	gfx_clr_set_xy(x, y, C64_LIGHT_RED);
+	// gfx_scr_set_xy(x, y, TILE_HAZARD);
+	// gfx_clr_set_xy(x, y, C64_LIGHT_RED);
+	gfx_set_xy(x, y, C64_LIGHT_RED, TILE_HAZARD);
 }
 
 // wait for scan line 250, end of frame
@@ -454,35 +478,28 @@ void gfx_fade_to_black() {
 	// gfx_wait_for_key();
 }
 
+#define SPBD	SP_BODY
+#define SPHD	SP_HEAD
+#define SPT1	SP_TAIL1
+#define SPT2	SP_TAIL2
+
 const uint8_t logo_scr[] = {
-	32, SP_BODY, SP_BODY, SP_BODY, 32, 32, SP_BODY, 32, 32, 32, SP_HEAD, 32, 32, SP_BODY, SP_BODY, SP_BODY, 32, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, SP_BODY, SP_BODY, SP_HEAD, 32, 32, SP_BODY, SP_BODY, SP_BODY, 32, 32, 32, 32, 32, SP_BODY, 32,
-
-	SP_BODY, 32, 32, 32, SP_HEAD, 32, SP_BODY, SP_BODY, 32, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, 32, 32, SP_BODY, 32, 32, SP_BODY, 32, 32, 32, 32, SP_BODY, 32, 32, 32, SP_HEAD, 32, 32, 32, SP_BODY, SP_BODY, 32,
-
-	SP_BODY, 32, 32, 32, 32, 32, SP_BODY, SP_BODY, SP_BODY, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, 32, 32, 32, SP_BODY, 32, 32, 32, 32, 32, 32, SP_BODY, 32, SP_BODY, 32,
-
-	32, SP_BODY, SP_BODY, SP_BODY, 32, 32, SP_BODY, 32, SP_BODY, 32, SP_BODY, 32, SP_BODY, SP_BODY, SP_BODY, SP_BODY, SP_BODY, 32, SP_BODY, SP_BODY, 32, 32, 32, 32, SP_BODY, SP_BODY, SP_BODY, SP_BODY, 32, SP_BODY, SP_TAIL2, SP_TAIL1, SP_BODY, 32, 32, SP_BODY, 32, 32, SP_BODY, 32,
-
-	32, 32, 32, 32, SP_BODY, 32, SP_BODY, 32, 32, SP_BODY, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, 32, 32, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, SP_BODY, SP_BODY, SP_BODY, SP_BODY, SP_HEAD,
-
-	SP_TAIL2, 32, 32, 32, SP_BODY, 32, SP_TAIL1, 32, 32, SP_BODY, SP_BODY, 32, SP_TAIL1, 32, 32, 32, SP_BODY, 32, SP_TAIL1, 32, 32, SP_BODY, 32, 32, SP_BODY, 32, 32, SP_BODY, 32, SP_BODY, 32, 32, 32, SP_BODY, 32, 32, 32, 32, SP_TAIL1, 32,
-
-	32, SP_TAIL1, SP_BODY, SP_BODY, 32, 32, SP_TAIL2, 32, 32, 32, SP_BODY, 32, SP_TAIL2, 32, 32, 32, SP_HEAD, 32, SP_TAIL2, 32, 32, 32, SP_HEAD, 32, SP_BODY, SP_BODY, SP_TAIL1, SP_TAIL2, 32, 32, SP_BODY, SP_BODY, SP_BODY, SP_BODY, 32, 32, 32, 32, SP_TAIL2, 32
+	  32, SPBD, SPBD, SPBD,   32,   32, SPBD,   32,   32,   32, SPHD,   32,   32, SPBD, SPBD, SPBD,   32,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD, SPBD, SPBD, SPHD,   32,   32, SPBD, SPBD, SPBD,   32,   32,   32,   32,   32, SPBD,   32,
+	SPBD,   32,   32,   32, SPHD,   32, SPBD, SPBD,   32,   32, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD,   32,   32, SPBD,   32,   32, SPBD,   32,   32,   32,   32, SPBD,   32,   32,   32, SPHD,   32,   32,   32, SPBD, SPBD,   32,
+	SPBD,   32,   32,   32,   32,   32, SPBD, SPBD,   32,   32, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32,   32,   32,   32, SPBD,   32,   32,   32,   32,   32,   32, SPBD,   32, SPBD,   32,
+	  32, SPBD, SPBD, SPBD,   32,   32, SPBD,   32, SPBD,   32, SPBD,   32, SPBD, SPBD, SPBD, SPBD, SPBD,   32, SPBD, SPBD,   32,   32,   32,   32, SPBD, SPBD, SPBD, SPBD,   32, SPBD, SPT2, SPT1, SPBD,   32,   32, SPBD,   32,   32, SPBD,   32,
+	  32,   32,   32,   32, SPBD,   32, SPBD,   32,   32, SPBD, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32,   32,   32,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD, SPBD, SPBD, SPBD, SPHD,
+	SPT2,   32,   32,   32, SPBD,   32, SPT1,   32,   32, SPBD, SPBD,   32, SPT1,   32,   32,   32, SPBD,   32, SPT1,   32,   32, SPBD,   32,   32, SPBD,   32,   32,   32,   32, SPBD,   32,   32,   32, SPBD,   32,   32,   32,   32, SPT1,   32,
+	  32, SPT1, SPBD, SPBD,   32,   32, SPT2,   32,   32,   32, SPBD,   32, SPT2,   32,   32,   32, SPHD,   32, SPT2,   32,   32,   32, SPHD,   32, SPBD, SPBD, SPT1, SPT2,   32,   32, SPBD, SPBD, SPBD,   32,   32,   32,   32,   32, SPT2,   32
 };
 
 const uint8_t logo_clr[] = {
 	0x00, 0x0d, 0x0d, 0x0d, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x07, 0x07, 0x07, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x03, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00,
-
 	0x0d, 0x00, 0x00, 0x00, 0x0d, 0x00, 0x03, 0x03, 0x00, 0x00, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x00, 0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x0a, 0x0a, 0x00,
-
 	0x0d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03, 0x00, 0x00, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0a, 0x00,
-
 	0x00, 0x0d, 0x0d, 0x0d, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x07, 0x07, 0x07, 0x07, 0x07, 0x00, 0x05, 0x05, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x03, 0x03, 0x03, 0x03, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x0a, 0x00,
-
 	0x00, 0x00, 0x00, 0x00, 0x0d, 0x00, 0x03, 0x00, 0x00, 0x03, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a,
-
 	0x0d, 0x00, 0x00, 0x00, 0x0d, 0x00, 0x03, 0x00, 0x00, 0x03, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x00, 0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00,
-
 	0x00, 0x0d, 0x0d, 0x0d, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x03, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00
 };
 
@@ -496,6 +513,46 @@ void gfx_draw_snake_logo() {
 	}
 }
 
+void gfx_update_score() {
+	__asm {
+		lda		snake1+SNAKE_SCORE_OFF+3
+		clc
+		adc		#48
+		sta		scrRAMaddr+24*40+1
 
+		lda		snake1+SNAKE_SCORE_OFF+2
+		clc
+		adc		#48
+		sta		scrRAMaddr+24*40+2
 
+		lda		snake1+SNAKE_SCORE_OFF+1
+		clc
+		adc		#48
+		sta		scrRAMaddr+24*40+3
 
+		lda		snake1+SNAKE_SCORE_OFF+0
+		clc
+		adc		#48
+		sta		scrRAMaddr+24*40+4
+
+		lda		snake2+SNAKE_SCORE_OFF+3
+		clc
+		adc		#48
+		sta		scrRAMaddr+24*40+35
+
+		lda		snake2+SNAKE_SCORE_OFF+2
+		clc
+		adc		#48
+		sta		scrRAMaddr+24*40+36
+
+		lda		snake2+SNAKE_SCORE_OFF+1
+		clc
+		adc		#48
+		sta		scrRAMaddr+24*40+37
+
+		lda		snake2+SNAKE_SCORE_OFF+0
+		clc
+		adc		#48
+		sta		scrRAMaddr+24*40+38
+	}
+}

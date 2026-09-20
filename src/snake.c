@@ -4,6 +4,7 @@
 #include <c64/cia.h>
 #include <c64/sprites.h>
 
+#include "snake.h"
 #include "utils.h"
 #include "gfx.h"
 #include "sprites.h"
@@ -34,12 +35,13 @@
 __export volatile uint8_t charset_memory[2048];
 #pragma bss(bss)
 
-#define KEY_F1		133
-#define KEY_F3		134
-#define KEY_F5		135
-
+// background color that will be set in each game loop
 uint8_t background_color = C64_BLACK;
 
+// score will be updated on screen at the beginning of a game loop if set
+uint8_t update_score = 0;
+
+// ############################################################### snakes
 
 // snake direction flags (do not change, those values are assumed in several places)
 #define	SDIR_UP		0
@@ -64,21 +66,10 @@ const int8_t ddy[4] = {-1, 0, 1, 0};
 // number of consecutive blocked advance-ticks tolerated before a trapped snake starts shrinking
 #define STUCK_TIMEOUT	4
 
-typedef struct {
-	uint8_t	status;
-	uint8_t	direction;				// movement direction
-	uint8_t	x[256];					// "ring buffer" of snake position, 0xff -> invalid
-	uint8_t	y[256];
-	uint8_t	start, end, length;		// index of current start and end, length
-	uint8_t	grow;					// number of rounds the snake should keep growing
-	uint8_t	stuck;					// number of consecutive blocked advance attempts
-	uint8_t score[4];				// score in individual digits
-} Snake;
+// *** most of the code below would use pointers but for the C64
+// the generated code is more compact like this (i.e. with hardwired addresses)
 
 Snake snake1, snake2;
-
-// *** most of the code below would use pointers but for the C64 the generated code is more compact like this (i.e. with
-// hardwired addresses
 
 // reset all data for the given snake, resets score if reset_score != 0
 void snake_reset(uint8_t s, uint8_t reset_score) {
@@ -128,12 +119,14 @@ void snake_reset(uint8_t s, uint8_t reset_score) {
 	}
 }
 
-// increase score, "pedestrian" version, 9999 = max score
-void snake_inc_score(uint8_t s) {
+// increase score of snake s by value (v = 0..10), "pedestrian" version, 9999 = max score
+void snake_inc_score(uint8_t s, uint8_t v) {
+	if (v > 10)
+		v = 10;
 	if (s == 1) {
-		snake1.score[0]++;
+		snake1.score[0] += v;
 		if (snake1.score[0] >= 10) {
-			snake1.score[0] = 0;
+			snake1.score[0] -= 10;
 			snake1.score[1]++;
 			if (snake1.score[1] >= 10) {
 				snake1.score[1] = 0;
@@ -153,9 +146,9 @@ void snake_inc_score(uint8_t s) {
 		return;
 	}
 	if (s == 2) {
-		snake2.score[0]++;
+		snake2.score[0] += v;
 		if (snake2.score[0] >= 10) {
-			snake2.score[0] = 0;
+			snake2.score[0] -= 10;
 			snake2.score[1]++;
 			if (snake2.score[1] >= 10) {
 				snake2.score[1] = 0;
@@ -222,23 +215,6 @@ void snake_dec_score(uint8_t s) {
 	}
 }
 
-void snake_draw_score(uint8_t s) {
-	if (s == 1) {
-		gfx_scr_set_xy(1, 24, snake1.score[3] + 48);
-		gfx_scr_set_xy(2, 24, snake1.score[2] + 48);
-		gfx_scr_set_xy(3, 24, snake1.score[1] + 48);
-		gfx_scr_set_xy(4, 24, snake1.score[0] + 48);
-		return;
-	}
-	if (s == 2) {
-		gfx_scr_set_xy(35, 24, snake2.score[3] + 48);
-		gfx_scr_set_xy(36, 24, snake2.score[2] + 48);
-		gfx_scr_set_xy(37, 24, snake2.score[1] + 48);
-		gfx_scr_set_xy(38, 24, snake2.score[0] + 48);
-		return;
-	}
-}
-
 // add a segment to the front of snake s (1 or 2)
 void snake_add(uint8_t s, uint8_t x, uint8_t y) {
 	if (s == 1) {
@@ -277,22 +253,14 @@ __noinline uint8_t dec8(uint8_t v) {
 // draw head of the snake (1st two pieces)
 void snake_draw_head(uint8_t s) {
 	if (s == 1) {
-		// gfx_scr_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], SP_HEAD);
-		// gfx_clr_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], S1_COLOR);
 		gfx_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], S1_COLOR, SP_HEAD);
 		uint8_t p = dec8(snake1.start);
-		// gfx_scr_set_xy(snake1.x[p], snake1.y[p], SP_BODY);
-		// gfx_clr_set_xy(snake1.x[p], snake1.y[p], S1_COLOR);
 		gfx_set_xy(snake1.x[p], snake1.y[p], S1_COLOR, SP_BODY);
 		return;
 	}
 	if (s == 2) {
-		// gfx_scr_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], SP_HEAD);
-		// gfx_clr_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], S2_COLOR);
 		gfx_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], S2_COLOR, SP_HEAD);
 		uint8_t p = dec8(snake2.start);
-		// gfx_scr_set_xy(snake2.x[p], snake2.y[p], SP_BODY);
-		// gfx_clr_set_xy(snake2.x[p], snake2.y[p], S2_COLOR);
 		gfx_set_xy(snake2.x[p], snake2.y[p], S2_COLOR, SP_BODY);
 		return;
 	}
@@ -301,33 +269,21 @@ void snake_draw_head(uint8_t s) {
 // draw tail of the snake (last two pieces and a final erase if necessary)
 void snake_draw_tail(uint8_t s) {
 	if (s == 1) {
-		// gfx_scr_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], SP_TAIL2);
-		// gfx_clr_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], S1_COLOR);
 		gfx_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], S1_COLOR, SP_TAIL2);
 		uint8_t p1 = inc8(snake1.end);
-		// gfx_scr_set_xy(snake1.x[p1], snake1.y[p1], SP_TAIL1);
-		// gfx_clr_set_xy(snake1.x[p1], snake1.y[p1], S1_COLOR);
 		gfx_set_xy(snake1.x[p1], snake1.y[p1], S1_COLOR, SP_TAIL1);
 		uint8_t p2 = dec8(snake1.end);
 		if (snake1.x[p2] != 0xff) {
-			// gfx_scr_set_xy(snake1.x[p2], snake1.y[p2], SP_EMPTY);
-			// gfx_clr_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR);
 			gfx_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR, SP_EMPTY);
 		}
 		return;
 	}
 	if (s == 2) {
-		// gfx_scr_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], SP_TAIL2);
-		// gfx_clr_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], S2_COLOR);
-		gfx_set_xy(snake2.x[snake1.end], snake2.y[snake1.end], S2_COLOR, SP_TAIL2);
+		gfx_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], S2_COLOR, SP_TAIL2);
 		uint8_t p1 = inc8(snake2.end);
-		// gfx_scr_set_xy(snake2.x[p1], snake2.y[p1], SP_TAIL1);
-		// gfx_clr_set_xy(snake2.x[p1], snake2.y[p1], S2_COLOR);
 		gfx_set_xy(snake2.x[p1], snake2.y[p1], S2_COLOR, SP_TAIL1);
 		uint8_t p2 = dec8(snake2.end);
 		if (snake2.x[p2] != 0xff) {
-			// gfx_scr_set_xy(snake2.x[p2], snake2.y[p2], SP_EMPTY);
-			// gfx_clr_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR);
 			gfx_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR, SP_EMPTY);
 		}
 		return;
@@ -390,7 +346,7 @@ void snake_punish(uint8_t s) {
 			snd_play_death();
 		} else {
 			snake_dec_score(1);
-			snake_draw_score(1);
+			update_score = 1;
 			snake1.length--;
 			snake1.end++;
 			snake_draw_tail(1);
@@ -406,7 +362,7 @@ void snake_punish(uint8_t s) {
 			snd_play_death();
 		} else {
 			snake_dec_score(2);
-			snake_draw_score(2);
+			update_score = 1;
 			snake2.length--;
 			snake2.end++;
 			snake_draw_tail(2);
@@ -433,8 +389,8 @@ void snake_advance(uint8_t s) {
 				snake1.grow = 2;
 				gfx_scr_set_xy(nx, ny, TILE_EMPTY);
 				food_deactivate(nx, ny);
-				snake_inc_score(1);
-				snake_draw_score(1);
+				snake_inc_score(1, 1);
+				update_score = 1;
 				snd_play_eat();
 			} else {
 				// collision with hazard or blocked by wall, self or other snake
@@ -472,8 +428,8 @@ void snake_advance(uint8_t s) {
 				snake2.grow = 2;
 				gfx_scr_set_xy(nx, ny, TILE_EMPTY);
 				food_deactivate(nx, ny);
-				snake_inc_score(2);
-				snake_draw_score(2);
+				snake_inc_score(2, 1 );
+				update_score = 1;
 				snd_play_eat();
 			} else {
 				// collision with hazard or blocked by wall, self or other snake
@@ -722,7 +678,7 @@ typedef struct {
 #define FOOD_MAX			4
 #define FOOD_INACTIVE		0
 #define FOOD_ACTIVE			1
-#define FOOD_SPAWN_TRIES	10
+#define FOOD_SPAWN_TRIES	5
 #define FOOD_DURATION		10
 
 Food food[FOOD_MAX];
@@ -748,8 +704,8 @@ void food_check() {
 		if (food[i].active == FOOD_INACTIVE) {
 			// food inactive -> spawn
 			for (uint8_t j = 0; j < FOOD_SPAWN_TRIES; j++) {
-				uint8_t x = 1 + (rng_next() & 0x1f) + (rng_next() & 0x03) * 2;	// random number between 1 and 38
-				uint8_t y = 1 + (rng_next() & 0x0f) + (rng_next() & 0x03) * 2;	// random number between 1 and 22, a bit crude
+				uint8_t x = 1 + (rng_next() % 38); // oscar64 modulo is sufficiently fast
+				uint8_t y = 1 + (rng_next() % 22);
 				if (gfx_scr_get_xy(x, y) == TILE_EMPTY) {
 					food[i].x = x;
 					food[i].y = y;
@@ -780,12 +736,13 @@ enum EventType {
 };
 
 typedef struct {
-	uint8_t active;			// 1 = active, 0 otherwise
+	uint8_t active;				// 1 = active, 0 otherwise
 	enum EventType type;
-	uint16_t xpos;			// 0 .. 320 + SPR_OFFSET_X
-	uint8_t xdir;			// 0 = moving left, 1 = moving right
-	uint8_t ypos;			// SPR_OFFSET_Y .. SPR_OFFSET + 200
-	uint8_t animate;		// animation state
+	uint16_t xpos;				// 0 .. 320 + SPR_OFFSET_X
+	uint8_t xdir;				// 0 = moving left, 1 = moving right
+	uint8_t ypos;				// SPR_OFFSET_Y .. SPR_OFFSET + 200
+	uint8_t animate_counter;	// animation counter (specific for EventType)
+	uint8_t animate_state;		// animation state (specific for EventType)
 } Event;
 
 Event event[EVENT_N];
@@ -807,7 +764,8 @@ void event_add(enum EventType t) {
 		case HEART:
 			event[ndx].active = 1;
 			event[ndx].type = HEART;
-			event[ndx].ypos = SPR_OFFSET_Y + 10 + (rng_next() & 0x7f) + (rng_next() & 0x1f);
+			uint8_t rng64 = (rng_next() & 0x3f);
+			event[ndx].ypos = SPR_OFFSET_Y + 8 + (rng64 << 1) + (rng64 >> 1);
 			if (rng_next() & 1) {
 				event[ndx].xpos = 0;
 				event[ndx].xdir = 1;
@@ -815,10 +773,13 @@ void event_add(enum EventType t) {
 				event[ndx].xpos = 320 + SPR_OFFSET_X;
 				event[ndx].xdir = 0;
 			}
-			event[ndx].animate = 0;
+			event[ndx].animate_counter = 0;
+			event[ndx].animate_state = 0;
 			break;
 	}
 }
+
+const uint8_t heart_animate[] = {3, 4, 5, 4, 3};
 
 // process all events including display updates, call once per frame
 void event_process() {
@@ -836,10 +797,16 @@ void event_process() {
 							event[i].active = 0;
 					}
 					if (event[i].active) {
-						event[i].animate = (++event[i].animate) & 0x0f;
-						spr_image(i, 48 + 3 + (event[i].animate >> 2));
+						event[i].animate_counter++;
+						if (event[i].animate_counter >= 3) {
+							event[i].animate_counter = 0;
+							event[i].animate_state++;
+							if (event[i].animate_state >= 5)
+								event[i].animate_state = 0;
+						}
+						spr_image(i, 48 + heart_animate[event[i].animate_state]);
 						spr_show(i, 1);
-						spr_color(i, C64_LIGHT_GREEN);
+						spr_color(i, C64_PURPLE);
 						spr_move(i, event[i].xpos, event[i].ypos);
 					} else {
 						spr_show(i, 0);
@@ -918,27 +885,26 @@ void game_loop(void) {
 	uint8_t	stop = 0;
 
 	while (!stop) {
-		// display current level for one seconds
+		// display current level for one second
 		gfx_scr_set(32);
 		gfx_clr_set(1);
-
 		level_str[6] = ((level + 1) / 10) + 48;
 		level_str[7] = ((level + 1) % 10) + 48;
 		gfx_print_xy(16, 12, C64_WHITE, level_str);
 		for(uint8_t i = 0; i < 50; i++)
 			gfx_wait_frame_end();
 
-		// set up screen
-		gfx_scr_set(32);
-		gfx_clr_set(1);
-		gfx_draw_frame();
-		game_hazard_map(level);
-
-		// set up snakes
+		// init snakes
 		snake_init(first_level);
 		if (first_level) {
 			first_level = 0;
 		}
+
+		// set up screen
+		gfx_setup_game_screen();
+		game_hazard_map(level);
+		gfx_update_score();
+
 		snake_draw_head(1);
 		snake_draw_body(1);
 		snake_draw_tail(1);
@@ -950,25 +916,6 @@ void game_loop(void) {
 		food_init();
 		food_check();
 
-		gfx_clr_set_xy(1, 24, S1_COLOR);	// set color for score
-		gfx_clr_set_xy(2, 24, S1_COLOR);
-		gfx_clr_set_xy(3, 24, S1_COLOR);
-		gfx_clr_set_xy(4, 24, S1_COLOR);
-		snake_draw_score(1);
-
-		gfx_clr_set_xy(35, 24, S2_COLOR);	// set color for score
-		gfx_clr_set_xy(36, 24, S2_COLOR);
-		gfx_clr_set_xy(37, 24, S2_COLOR);
-		gfx_clr_set_xy(38, 24, S2_COLOR);
-		snake_draw_score(2);
-
-		gfx_print_xy(10, 24, C64_WHITE, S"TIME"); // set up timer indicator
-		gfx_set_xy(14, 24, C64_WHITE, 118);
-		// gfx_scr_set_xy(25, 24, 79);
-		for (uint8_t i = 15; i <= 24; i++) {
-			gfx_set_xy(i, 24, C64_LIGHT_GRAY, 224);
-		}
-
 		event_init();
 
 		uint8_t advance_counter = 0;
@@ -979,15 +926,25 @@ void game_loop(void) {
 		uint8_t level_timer1 = 9;			// 9 main ticks, do not change
 		uint8_t level_timer2 = 4;			// 4 sub ticks, do not change
 
+		update_score = 1;					// update the score at the beginning of each game loop
+
 		while (!stop) {
+			// update score if need, can be late after last end-of-frame wait, bottom part
+			if (update_score) {
+				gfx_update_score();
+				update_score = 0;
+			}
+
 			// sound update, just before the end-of-frame wait, no graphics involved
 			snd_update();
+
 			// read player controls, just before the end-of-frame wait, no graphics involved
 			snake_control(1);
 			if (game_mode == PLAYER_VS_PLAYER)
 				snake_control(2);
 
-			gfx_wait_frame_end();
+			gfx_wait_frame_end();			// *** end of frame wait, this sync's the game loop
+
 			__asm {							// update background color and reset to black for next frame
 				lda		background_color
 	//			sta     $d020           	// set border color
@@ -1017,7 +974,7 @@ void game_loop(void) {
 						snake_computer(2);
 					computer_counter = 0;
 				} else {
-					// food checks only occur when nothing advances
+					// food checks only occur when nothing else happens, it can take a significant amount of time
 					if (food_counter >= FOOD_TICKS) {
 						food_check();
 						food_counter = 0;
@@ -1117,7 +1074,7 @@ int main(void) {
 	rng_init();
 	gfx_init();
 	snd_init();
-	snake_init(1);	// just to initilize the score to 0 for menu()
+	snake_init(1);	// just to initialize the score to 0 for menu()
 	while(1) {
 		if (!game_menu())
 			break;

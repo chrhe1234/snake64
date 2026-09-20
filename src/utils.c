@@ -25,13 +25,49 @@ void wait_100ms() {
 	}
 }
 
-uint8_t rng_state;
+static uint16_t rng_state = 0;
 
 void rng_init(void) {
-	rng_state = *((volatile uint8_t*) 0xdc04);
+	__asm {
+		lda		$dc04			// CIA1 timer A low
+		sta		rng_state
+		lda		$d012			// VIC raster line, low byte
+		sta		rng_state+1
+	}
 }
 
 uint8_t rng_next(void) {
-	rng_state = ((rng_state << 2) + rng_state) + 1;
-	return rng_state;
+	__asm {
+		// 16 bit counter
+		lda		rng_state			// add $359d to rng_state
+		clc
+		adc		#$9d
+		sta		rng_state
+		lda		rng_state+1
+		adc		#$35
+		sta		rng_state+1
+
+		eor		rng_state
+		sta		accu
+		asl
+		asl
+		asl
+		eor		accu
+		sta		accu
+
+		lsr
+		lsr
+		lsr
+		lsr
+		lsr
+		eor		accu
+		sta		accu
+
+		asl
+		asl
+		asl
+		asl
+		eor		accu
+		sta		accu
+	}
 }
