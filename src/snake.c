@@ -15,7 +15,7 @@
 // $0c00-$0fff sprites
 // $1000-$37ff code/data
 // $3800-$4000 charset (not initialized)
-// $4000-$a000 BSS/heap/stack (not intiliazed)
+// $4000-$a000 BSS/heap/stack (not initialized)
 
 #pragma region(lower1, 0x0a00, 0x0c00, , , {code, data})
 #pragma section(sprites, 0, , , data)
@@ -804,14 +804,35 @@ void event_process() {
 							if (event[i].animate_state >= 5)
 								event[i].animate_state = 0;
 						}
-						spr_image(i, 48 + heart_animate[event[i].animate_state]);
-						spr_show(i, 1);
-						spr_color(i, C64_PURPLE);
-						spr_move(i, event[i].xpos, event[i].ypos);
+						// check collision with snake head -> consume and disable event
+						uint8_t xc = (uint8_t) ((event[i].xpos - SPR_OFFSET_X + 12) >> 3);
+						uint8_t yc = (event[i].ypos - SPR_OFFSET_Y + 10) >> 3;
+						if (gfx_scr_get_xy(xc, yc) == SP_HEAD) {
+							uint8_t clr = gfx_clr_get_xy(xc, yc);
+							if (clr == S1_COLOR) {
+								snake_inc_score(1, 5);
+								update_score = 1;
+								snd_play_eat();
+								event[i].active = 0;
+							}
+							if (clr == S2_COLOR) {
+								snake_inc_score(2, 5);
+								update_score = 1;
+								snd_play_eat();
+								event[i].active = 0;
+							}
+						}
+						if (event[i].active) {
+							spr_image(i, 48 + heart_animate[event[i].animate_state]);
+							spr_show(i, 1);
+							spr_color(i, C64_PURPLE);
+							spr_move(i, event[i].xpos, event[i].ypos);
+						} else {
+							spr_show(i, 0);
+						}
 					} else {
 						spr_show(i, 0);
 					}
-					// check collision with snake head -> consume
 					break;
 			}
 		}

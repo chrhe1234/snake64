@@ -1,25 +1,34 @@
 # Snake64
 
-
 ## About
-
 
 ## To-Do
 
-* Time blips should increase their frequency as time is counted down. And at the very end, there should be a slightly longer higher tone that signals the end of the level.
+* Event spawning should be controlled and level-dependent.
+
+* Add a snake-shortening predator (e.g. scorpion) that attacks and shortens a snake.
 
 * Wrap CIA access by sei/cli so they cannot be interrupted.
 
 * Levels: Create obstacle layouts with progressively more difficult navigation. Decide how hazards are incorporated into level design. Corridors could be added. Maybe also 8 or more L-type shapes.
 
-* Sprite-based gameplay additions: Add a snake-shortening predator that attacks a snake and removes tail segments. Add temporary bonus food/rewards that appear occasionally and give a larger reward than normal food.
+* Last time sound blip should be a slightly longer higher tone that signals the end of the level.
 
 * Computer player: Keep the current 5×5 neighbourhood evaluation plus scan-ahead approach. Refine only when specific weaknesses show up during playtesting.
 
 * Maybe cosmetic score feedback: Show brief +1, -1, etc. sprites where points are gained or lost.
 
+## Design notes
+
+* All graphics and the snakes are character based. We use some custom characters that are patched in after copying the character ROM to RAM $3800.
+
+* Sprites are from $0C00 to $1000, which is enough space for 16 sprites.
 
 ## Done
+
+* Add sprite-based events. A horizontally floating heart (+5 if hit with snake head) is implemented.
+
+* Time blips should increase their frequency as time is counted down.
 
 * There should be some game over screen.
 
@@ -34,4 +43,3 @@
 * Character set: Do not embed the whole 2k in the program. Instead copy the charset from ROM to 0x3800 and patch it in place. Reduces the program size by ~ 2k.
 
 * Food system: Implement vsync-based spawn/despawn logic. Limit random placement attempts so spawning cannot get stuck.
-

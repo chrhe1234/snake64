@@ -38,17 +38,20 @@
 // set screen RAM
 void gfx_scr_set(uint8_t value);
 
-// set screen RAM char at cx, cy to ca
+// set screen RAM at cx, cy to ca
 void gfx_scr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca);
 
-// get screen RAM char at cx, cy
+// get screen RAM at cx, cy
 uint8_t gfx_scr_get_xy(uint8_t cx, uint8_t cy);
 
 // set color RAM
 void gfx_clr_set(uint8_t value);
 
-// set color RAM char at cx, cy to ca
+// set color RAM at cx, cy to ca
 void gfx_clr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca);
+
+// get color RAM at cx, cy
+uint8_t gfx_clr_get_xy(uint8_t cx, uint8_t cy);
 
 // set screen x,y to color and chr
 void gfx_set_xy(uint8_t cx, uint8_t cy, uint8_t color, uint8_t chr);

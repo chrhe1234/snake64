@@ -12,7 +12,7 @@
 #define scrRAM		((uint8_t*) scrRAMaddr)
 #define clrRAM		((uint8_t*) clrRAMaddr)
 
-// ###############################################################
+// ############################################################### screen and color RAM line offset
 
 // screen RAM row address lookup table, low byte
 uint8_t scr_row_low[25] = {
@@ -130,124 +130,6 @@ uint8_t clr_row_high[25] = {
 	(clrRAMaddr + 24 * 40) >> 8
 };
 
-// set screen RAM
-void gfx_scr_set(uint8_t value) {
-	__asm {
-		lda value
-		ldx #$00
-	loop:
-		sta $0400,x
-		sta $0500,x
-		sta $0600,x
-		sta $06e8,x
-		inx
-		bne loop
-	}
-}
-
-// set color RAM
-void gfx_clr_set(uint8_t value) {
-	__asm {
-		lda value
-		ldx #$00
-	loop:
-		sta $d800,x
-		sta $d900,x
-		sta $da00,x
-		sta $dae8,x
-		inx
-		bne loop
-	}
-}
-
-// set screen RAM char at cx, cy to ca
-void gfx_scr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca) {
-	__asm {
-		ldy     cy
-		lda		scr_row_low,y
-		sta		_store+1
-		lda		scr_row_high,y
-		sta		_store+2
-		lda		ca
-		ldx     cx
-	_store:
-		sta		$ffff,x				// modified to actual screen address
-	}
-}
-
-// get screen RAM char at cx, cy
-uint8_t gfx_scr_get_xy(uint8_t cx, uint8_t cy) {
-	__asm {
-		ldy     cy
-		lda		scr_row_low,y
-		sta		_store+1
-		lda		scr_row_high,y
-		sta		_store+2
-		ldx     cx
-	_store:
-		lda		$ffff,x				// modified to actual screen address
-		sta		accu
-		lda		#0
-		sta		accu+1
-	}
-}
-
-// set color RAM char at cx, cy to ca
-void gfx_clr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca) {
-	__asm {
-		ldy     cy
-		lda		clr_row_low,y
-		sta		_store+1
-		lda		clr_row_high,y
-		sta		_store+2
-		lda		ca
-		ldx     cx
-	_store:
-		sta		$ffff,x				// modified to actual screen address
-    }
-}
-
-// set screen x,y to color and chr
-void gfx_set_xy(uint8_t cx, uint8_t cy, uint8_t color, uint8_t chr) {
-	__asm {
-		ldy     cy
-		lda		scr_row_low,y
-		sta		_store1+1
-		lda		scr_row_high,y
-		sta		_store1+2
-		lda		chr
-		ldx     cx
-	_store1:
-		sta		$ffff,x				// modified to actual screen buffer address
-
-		ldy     cy
-		lda		clr_row_low,y
-		sta		_store2+1
-		lda		clr_row_high,y
-		sta		_store2+2
-		lda		color
-		ldx     cx
-	_store2:
-		sta		$ffff,x				// modified to actual color buffer address
-    }
-}
-
-// print a null-terminated string (screen code) at cx, cy in the given color
-void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str) {
-	while (*str) {
-		gfx_set_xy(cx, cy, color, (uint8_t) *str);
-		cx++;
-		str++;
-      }
-}
-
-// hide all sprites
-void gfx_spr_hide_all() {
-//	for (uint8_t i = 0; i < SPR_N; i++)
-//		spr_show(i, 0);
-	vic.spr_enable = 0x00;
-}
-
 // ############################################################### initialize and reset
 
 void gfx_spr_init() {
@@ -350,6 +232,143 @@ void gfx_init() {
 	gfx_spr_init();
 }
 
+// ###############################################################
+
+// set screen RAM
+void gfx_scr_set(uint8_t value) {
+	__asm {
+		lda value
+		ldx #$00
+	loop:
+		sta $0400,x
+		sta $0500,x
+		sta $0600,x
+		sta $06e8,x
+		inx
+		bne loop
+	}
+}
+
+// set color RAM
+void gfx_clr_set(uint8_t value) {
+	__asm {
+		lda value
+		ldx #$00
+	loop:
+		sta $d800,x
+		sta $d900,x
+		sta $da00,x
+		sta $dae8,x
+		inx
+		bne loop
+	}
+}
+
+// set screen RAM char at cx, cy to ca
+void gfx_scr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca) {
+	__asm {
+		ldy     cy
+		lda		scr_row_low,y
+		sta		_store+1
+		lda		scr_row_high,y
+		sta		_store+2
+		lda		ca
+		ldx     cx
+	_store:
+		sta		$ffff,x				// modified to actual screen address
+	}
+}
+
+// get screen RAM char at cx, cy
+uint8_t gfx_scr_get_xy(uint8_t cx, uint8_t cy) {
+	__asm {
+		ldy     cy
+		lda		scr_row_low,y
+		sta		_store+1
+		lda		scr_row_high,y
+		sta		_store+2
+		ldx     cx
+	_store:
+		lda		$ffff,x				// modified to actual screen address
+		sta		accu
+		lda		#0
+		sta		accu+1
+	}
+}
+
+// set color RAM char at cx, cy to ca
+void gfx_clr_set_xy(uint8_t cx, uint8_t cy, uint8_t ca) {
+	__asm {
+		ldy     cy
+		lda		clr_row_low,y
+		sta		_store+1
+		lda		clr_row_high,y
+		sta		_store+2
+		lda		ca
+		ldx     cx
+	_store:
+		sta		$ffff,x				// modified to actual screen address
+    }
+}
+
+// get color RAM char at cx, cy
+uint8_t gfx_clr_get_xy(uint8_t cx, uint8_t cy) {
+	__asm {
+		ldy     cy
+		lda		clr_row_low,y
+		sta		_store+1
+		lda		clr_row_high,y
+		sta		_store+2
+		ldx     cx
+	_store:
+		lda		$ffff,x				// modified to actual screen address
+		and		#$0f
+		sta		accu
+		lda		#0
+		sta		accu+1
+	}
+}
+
+// set screen x,y to color and chr
+void gfx_set_xy(uint8_t cx, uint8_t cy, uint8_t color, uint8_t chr) {
+	__asm {
+		ldy     cy
+		lda		scr_row_low,y
+		sta		_store1+1
+		lda		scr_row_high,y
+		sta		_store1+2
+		lda		chr
+		ldx     cx
+	_store1:
+		sta		$ffff,x				// modified to actual screen buffer address
+
+		ldy     cy
+		lda		clr_row_low,y
+		sta		_store2+1
+		lda		clr_row_high,y
+		sta		_store2+2
+		lda		color
+		ldx     cx
+	_store2:
+		sta		$ffff,x				// modified to actual color buffer address
+    }
+}
+
+// print a null-terminated string (screen code) at cx, cy in the given color
+void gfx_print_xy(uint8_t cx, uint8_t cy, uint8_t color, const char *str) {
+	while (*str) {
+		gfx_set_xy(cx, cy, color, (uint8_t) *str);
+		cx++;
+		str++;
+      }
+}
+
+// hide all sprites
+void gfx_spr_hide_all() {
+	vic.spr_enable = 0x00;
+}
+
+
 // reset graphics
 void gfx_exit() {
 	gfx_spr_hide_all();
@@ -414,15 +433,11 @@ void gfx_setup_game_screen() {
 
 // draw/put food on the playing field
 void gfx_draw_food(uint8_t x, uint8_t y) {
-	// gfx_scr_set_xy(x, y, TILE_FOOD);
-	// gfx_clr_set_xy(x, y, C64_GREEN);
 	gfx_set_xy(x, y, C64_PURPLE, TILE_FOOD);
 }
 
 // draw/put hazard on the playing field
 void gfx_draw_hazard(uint8_t x, uint8_t y) {
-	// gfx_scr_set_xy(x, y, TILE_HAZARD);
-	// gfx_clr_set_xy(x, y, C64_LIGHT_RED);
 	gfx_set_xy(x, y, C64_LIGHT_RED, TILE_HAZARD);
 }
 
@@ -484,10 +499,10 @@ void gfx_fade_to_black() {
 #define SPT2	SP_TAIL2
 
 const uint8_t logo_scr[] = {
-	  32, SPBD, SPBD, SPBD,   32,   32, SPBD,   32,   32,   32, SPHD,   32,   32, SPBD, SPBD, SPBD,   32,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD, SPBD, SPBD, SPHD,   32,   32, SPBD, SPBD, SPBD,   32,   32,   32,   32,   32, SPBD,   32,
-	SPBD,   32,   32,   32, SPHD,   32, SPBD, SPBD,   32,   32, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD,   32,   32, SPBD,   32,   32, SPBD,   32,   32,   32,   32, SPBD,   32,   32,   32, SPHD,   32,   32,   32, SPBD, SPBD,   32,
+	  32, SPBD, SPBD, SPBD,   32,   32, SPBD,   32,   32,   32, SPHD,   32,   32, SPBD, SPBD, SPBD,   32,   32, SPHD,   32,   32,   32, SPT2,   32, SPBD, SPBD, SPBD, SPHD,   32,   32, SPBD, SPBD, SPBD,   32,   32,   32,   32,   32, SPBD,   32,
+	SPBD,   32,   32,   32, SPHD,   32, SPBD, SPBD,   32,   32, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD,   32,   32, SPT1,   32,   32, SPBD,   32,   32,   32,   32, SPBD,   32,   32,   32, SPHD,   32,   32,   32, SPBD, SPBD,   32,
 	SPBD,   32,   32,   32,   32,   32, SPBD, SPBD,   32,   32, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32,   32,   32,   32, SPBD,   32,   32,   32,   32,   32,   32, SPBD,   32, SPBD,   32,
-	  32, SPBD, SPBD, SPBD,   32,   32, SPBD,   32, SPBD,   32, SPBD,   32, SPBD, SPBD, SPBD, SPBD, SPBD,   32, SPBD, SPBD,   32,   32,   32,   32, SPBD, SPBD, SPBD, SPBD,   32, SPBD, SPT2, SPT1, SPBD,   32,   32, SPBD,   32,   32, SPBD,   32,
+	  32, SPBD, SPBD, SPBD,   32,   32, SPBD,   32, SPBD,   32, SPBD,   32, SPBD, SPBD, SPBD, SPBD, SPBD,   32, SPBD, SPBD,   32,   32,   32,   32, SPBD, SPBD, SPBD, SPHD,   32, SPBD, SPT2, SPT1, SPBD,   32,   32, SPBD,   32,   32, SPBD,   32,
 	  32,   32,   32,   32, SPBD,   32, SPBD,   32,   32, SPBD, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD,   32, SPBD,   32,   32,   32, SPBD,   32,   32,   32,   32, SPBD,   32,   32,   32, SPBD,   32, SPBD, SPBD, SPBD, SPBD, SPHD,
 	SPT2,   32,   32,   32, SPBD,   32, SPT1,   32,   32, SPBD, SPBD,   32, SPT1,   32,   32,   32, SPBD,   32, SPT1,   32,   32, SPBD,   32,   32, SPBD,   32,   32,   32,   32, SPBD,   32,   32,   32, SPBD,   32,   32,   32,   32, SPT1,   32,
 	  32, SPT1, SPBD, SPBD,   32,   32, SPT2,   32,   32,   32, SPBD,   32, SPT2,   32,   32,   32, SPHD,   32, SPT2,   32,   32,   32, SPHD,   32, SPBD, SPBD, SPT1, SPT2,   32,   32, SPBD, SPBD, SPBD,   32,   32,   32,   32,   32, SPT2,   32
