@@ -30,6 +30,28 @@ def png2sprite(filename):
     output = "\t// " + filename + "\n\t{" + ", ".join(f"0x{b:02X}" for b in sprite) + "}"
     return output
 
+def png2spriteXflip(filename):
+    print("Processing " + filename)
+    img = Image.open(filename)
+    if img.mode != "P":
+        raise ValueError(f"Image must be palette-indexed (mode P), got {img.mode}")
+    if img.size != (24, 21):
+        raise ValueError(f"Image must be 24x21 pixels, got {img.size}")
+    sprite = []
+    for y in range(21):
+        for byte_x in range(3):
+            value = 0
+            for bit in range(8):
+                x = byte_x * 8 + bit
+                index = img.getpixel((x, y))
+                if index > 0:
+                    value |= 1 << bit
+            sprite.append(value)
+        sprite[-3],sprite[-1] = sprite[-1],sprite[-3]
+    sprite.append(0x00)
+    output = "\t// " + filename + " flipped X\n\t{" + ", ".join(f"0x{b:02X}" for b in sprite) + "}"
+    return output
+
 spriteN = 0
 with open("sprites.c", "w") as f:
     # write header
@@ -39,15 +61,15 @@ with open("sprites.c", "w") as f:
     f.write("__export volatile uint8_t sprite_data[16][64] = {\n");
 
     # write sprites
-    f.write(png2sprite("spider1.png") + ",\n\n");
+    f.write(png2sprite("scorpion1.png") + ",\n\n");
     spriteN += 1
 
     # write sprites
-    f.write(png2sprite("spider2.png") + ",\n\n");
+    f.write(png2sprite("scorpion2.png") + ",\n\n");
     spriteN += 1
 
     # write sprites
-    f.write(png2sprite("spider3.png") + ",\n\n");
+    f.write(png2sprite("scorpion3.png") + ",\n\n");
     spriteN += 1
 
     # write sprites
@@ -60,6 +82,18 @@ with open("sprites.c", "w") as f:
 
     # write sprites
     f.write(png2sprite("heart3.png") + ",\n\n");
+    spriteN += 1
+
+    # write sprites
+    f.write(png2spriteXflip("scorpion1.png") + ",\n\n");
+    spriteN += 1
+
+    # write sprites
+    f.write(png2spriteXflip("scorpion2.png") + ",\n\n");
+    spriteN += 1
+
+    # write sprites
+    f.write(png2spriteXflip("scorpion3.png") + ",\n\n");
     spriteN += 1
 
     for n in range(spriteN, 16):

@@ -732,7 +732,8 @@ void food_check() {
 #define EVENT_N	SPR_N		// = number of simultaneous sprites
 
 enum EventType {
-	HEART
+	HEART,
+	SCORPION
 };
 
 typedef struct {
@@ -754,6 +755,7 @@ void event_init() {
 
 // add the given event type if a slot is available
 void event_add(enum EventType t) {
+	uint8_t rng64;
 	uint8_t ndx = 0;
 	while (event[ndx].active) {
 		ndx++;
@@ -764,7 +766,22 @@ void event_add(enum EventType t) {
 		case HEART:
 			event[ndx].active = 1;
 			event[ndx].type = HEART;
-			uint8_t rng64 = (rng_next() & 0x3f);
+			rng64 = (rng_next() & 0x3f);
+			event[ndx].ypos = SPR_OFFSET_Y + 8 + (rng64 << 1) + (rng64 >> 1);
+			if (rng_next() & 1) {
+				event[ndx].xpos = 0;
+				event[ndx].xdir = 1;
+			} else {
+				event[ndx].xpos = 320 + SPR_OFFSET_X;
+				event[ndx].xdir = 0;
+			}
+			event[ndx].animate_counter = 0;
+			event[ndx].animate_state = 0;
+			break;
+		case SCORPION:
+			event[ndx].active = 1;
+			event[ndx].type = SCORPION;
+			rng64 = (rng_next() & 0x3f);
 			event[ndx].ypos = SPR_OFFSET_Y + 8 + (rng64 << 1) + (rng64 >> 1);
 			if (rng_next() & 1) {
 				event[ndx].xpos = 0;
@@ -780,6 +797,8 @@ void event_add(enum EventType t) {
 }
 
 const uint8_t heart_animate[] = {3, 4, 5, 4, 3};
+const uint8_t scorpion_animate[] = {0, 1, 2, 1, 0};
+const uint8_t scorpion_animate_flipped[] = {6, 7, 8, 7, 6};
 
 // process all events including display updates, call once per frame
 void event_process() {
@@ -826,6 +845,54 @@ void event_process() {
 							spr_image(i, 48 + heart_animate[event[i].animate_state]);
 							spr_show(i, 1);
 							spr_color(i, C64_PURPLE);
+							spr_move(i, event[i].xpos, event[i].ypos);
+						} else {
+							spr_show(i, 0);
+						}
+					} else {
+						spr_show(i, 0);
+					}
+					break;
+				case SCORPION:
+					if (event[i].xdir) {
+						event[i].xpos++;
+						if (event[i].xpos > (SPR_OFFSET_X + 320 - 8))
+							event[i].active = 0;
+					} else {
+						event[i].xpos--;
+						if (event[i].xpos < (SPR_OFFSET_X - 16))
+							event[i].active = 0;
+					}
+					if (event[i].active) {
+						event[i].animate_counter++;
+						if (event[i].animate_counter >= 3) {
+							event[i].animate_counter = 0;
+							event[i].animate_state++;
+							if (event[i].animate_state >= 5)
+								event[i].animate_state = 0;
+						}
+						// check collision with snake -> hurt and disable scorpion
+						uint8_t xc = (uint8_t) ((event[i].xpos - SPR_OFFSET_X + 12) >> 3);
+						uint8_t yc = (event[i].ypos - SPR_OFFSET_Y + 10) >> 3;
+						uint8_t chr = gfx_scr_get_xy(xc, yc);
+						if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_BODY || chr == SP_TAIL2) {
+							uint8_t clr = gfx_clr_get_xy(xc, yc);
+							if (clr == S1_COLOR) {
+								snake_punish(1);
+								event[i].active = 0;
+							}
+							if (clr == S2_COLOR) {
+								snake_punish(2);
+								event[i].active = 0;
+							}
+						}
+						if (event[i].active) {
+							if (!event[i].xdir)
+								spr_image(i, 48 + scorpion_animate[event[i].animate_state]);
+							else
+								spr_image(i, 48 + scorpion_animate_flipped[event[i].animate_state]);
+							spr_show(i, 1);
+							spr_color(i, C64_YELLOW);
 							spr_move(i, event[i].xpos, event[i].ypos);
 						} else {
 							spr_show(i, 0);
@@ -1015,7 +1082,8 @@ void game_loop(void) {
 						break;
 					else {
 						level_timer1--;
-						event_add(HEART);
+						// event_add(HEART);
+						event_add(SCORPION);
 					}
 				}
 			}

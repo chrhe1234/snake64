@@ -6,7 +6,7 @@
 
 * Event spawning should be controlled and level-dependent.
 
-* Add a snake-shortening predator (e.g. scorpion) that attacks and shortens a snake.
+* Add another event (e.g. poisonous barrel) that makes the snake leave behind a hazardous trail for a few steps. Both in the same color as the hazards.
 
 * Wrap CIA access by sei/cli so they cannot be interrupted.
 
@@ -25,6 +25,8 @@
 * Sprites are from $0C00 to $1000, which is enough space for 16 sprites.
 
 ## Done
+
+* Add a snake-shortening predator (e.g. scorpion) that attacks and shortens a snake.
 
 * Add sprite-based events. A horizontally floating heart (+5 if hit with snake head) is implemented.
 
