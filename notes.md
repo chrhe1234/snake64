@@ -1,7 +1,8 @@
 # Snake64 - working notes
 
 Snapshot of the code review and the random-number / score work done on 2026-09-17 .. 2026-09-20
-(second review pass: 2026-09-20, build of 21:49).
+(second review pass: 2026-09-20, build of 21:49; third pass: 2026-09-22, covering the new `BARREL`
+event/hazardous-trail feature and the event spawn y-position).
 Numbers marked *measured* come from the compiled output (`snake64.asm`, `.map`) or from running the real
 bytes of `snake64.prg` in a small 6502 emulator; numbers marked *est.* are hand-derived and were not compiled.
 Cycle counts are nominal CPU cycles; VIC DMA and the 60 Hz KERNAL IRQ add time on top.
@@ -77,12 +78,24 @@ Single-byte modulo bias: 7:6 for n = 38, 12:11 for n = 22 (mild). For n > 128 it
 (this was the `% 171` heart-y problem). The comment "oscar64 modulo is sufficiently fast" in `food_check`
 is fine; `%` is *predictable*, not the fastest option.
 
-### Heart sprite y position (`event_add`) - resolved
+### Event sprite y position (`event_add`) - updated 2026-09-22
 
-`rng64 = rng_next() & 0x3f; ypos = SPR_OFFSET_Y + 8 + (rng64<<1) + (rng64>>1)` gives 64 positions,
-y = 58 .. 215, neighbouring gaps alternating 2 / 3 lines, exactly flat (4 hits per 256 for every position),
-no divmod call, about 99 % of the playfield height reachable by the heart's inked rows.
-(The earlier `% 0x3f` variant gave the top four positions 25 % extra weight.)
+Now: `row = (rng_next() % 22) + 1; ypos = (row << 3) + SPR_OFFSET_Y + 11`. Reason for the change: the
+collision checks in `event_process` reduce `ypos` to a character row via `(ypos - SPR_OFFSET_Y + 10) >> 3`;
+with the old formula (below) that reduction's remainder mod 8 was essentially arbitrary, so some spawns
+landed close enough to a row boundary that the sprite visually overlapped a snake segment without the
+collision registering (reported as "looks like touching but not detected"). The new formula centres `ypos`
+in the middle of row `row`: `(row*8 + 21) >> 3` always equals `row + 2` with remainder 21 mod 8 = 5, i.e.
+solidly mid-cell for every `row`, so the boundary case cannot occur. It reuses the same `1 + rng_next() % 22`
+range and mild bias already accepted for food placement (`food_check`), so no new bias profile is introduced.
+Coarser than before (22 rows instead of 64 y-positions), but `ypos` never changes after spawn (events only
+move horizontally), so this only reduces spawn-row variety, not motion smoothness.
+
+History (original resolution, superseded by the above): `rng64 = rng_next() & 0x3f;
+ypos = SPR_OFFSET_Y + 8 + (rng64<<1) + (rng64>>1)` gave 64 positions, y = 58 .. 215, neighbouring gaps
+alternating 2 / 3 lines, exactly flat (4 hits per 256 for every position), no divmod call, about 99 % of the
+playfield height reachable by the heart's inked rows. (The earlier `% 0x3f` variant gave the top four
+positions 25 % extra weight.)
 
 
 ## 4. Score handling
@@ -112,11 +125,12 @@ no divmod call, about 99 % of the playfield height reachable by the heart's inke
 * Stale comments and typos in `gfx.c` / `gfx.h` fixed; stray file `data/..\src\sprites.c` and `data/sprites.c` removed
   (git still lists `data/sprites.c` as deleted until committed).
 * `gfx.c` reordered (`gfx_init` before the drawing primitives); builds fine because the prototypes are in `gfx.h`.
+* (2026-09-22) `snake_draw_tail` erased cell `end-1` even when the tail did not advance (growth); this could blank
+  food, the head or the other snake. Fixed as part of the `trail`/`BARREL` work below (`tail_moved` guard) - the
+  fix is unconditional, so this is resolved generally, not just for the trail case.
 
 ### Still open (none urgent)
 
-* `snake_draw_tail` erases cell `end-1` even when the tail did not advance (growth); this can blank food, the head
-  or the other snake (rare, needs a tightly coiled snake).
 * The keyboard buffer is not flushed before `wait_for_key` in `game_menu`.
 * CIA access race in `stop_pressed` / `snake_control` (already on the readme to-do list);
   `gfx_init` ends with an unconditional `cli`.
@@ -132,7 +146,16 @@ no divmod call, about 99 % of the playfield height reachable by the heart's inke
 * Three logo glyphs have colour 0 on a black background (invisible; they come from the original art in `archive/`).
 
 
-## 6. Planned: heart vs. snake head collision (design only, nothing implemented)
+## 6. Superseded: heart vs. snake head collision design
+
+**Status: implemented for real.** `event_process` now has live collision handling for all three event types
+(`HEART`, `SCORPION`, `BARREL`; the "spider predator" mentioned below became `SCORPION`, and `BARREL` was
+added later, see section 7). The actual implementation is simpler than the geometry below: it compares
+`gfx_scr_get_xy`/`gfx_clr_get_xy` at the event's cell against `SP_HEAD`/`SP_BODY`/`SP_TAIL1`/`SP_TAIL2` and
+`S1_COLOR`/`S2_COLOR`, not the ink-centred dx/dy test. The design notes are kept below for the rationale
+(placement of the check inside `event_process`, cost estimate, rejected alternatives), which still applies.
+
+### Planned: heart vs. snake head collision (design only, nothing implemented) - historical
 
 **Where:** inside `event_process()`, in `case HEART`, in the `if (event[i].active)` branch, after `xpos` has been
 moved and before the sprite is drawn. The existing placeholder comment `// check collision with snake head -> consume`
@@ -160,3 +183,30 @@ check cannot tunnel.
 **Rejected alternatives:** checking inside `snake_advance` (only every 6th frame, on the heaviest frame, needs an inner
 loop over the events per snake, delays hits by up to 6 frames); a separate `event_check_collisions()` called from the
 game loop is a fine refactoring if `event_process` grows, but duplicates the loop and re-reads the event fields.
+
+
+## 7. `BARREL` event / hazardous trail - review finding and fix (2026-09-22)
+
+A third event type, `BARREL`, was added (`enum EventType` in `snake.c`, spawn logic shared with `HEART`/
+`SCORPION` in `event_add`): on collision with a snake it sets `Snake.trail = 5` (new field, `snake.h`).
+`snake_draw_tail` then lays a red `SP_TAIL2` hazard tile at the cell the tail just vacated instead of erasing
+it, once per genuine tail advance, decrementing `trail` each time - a trail of up to 5 hazardous cells left
+behind the snake for both snakes to run into (including the one that dropped it).
+
+**Bug found in review:** `snake_draw_tail` is called unconditionally from `snake_advance` on every advance,
+but `end` (the tail index) only actually moves when the snake isn't growing (`grow == 0`) or has hit
+`SNAKE_MAX`. On a growth tick, `snake_draw_tail` still computed `p2 = dec8(end)` and touched it - but since
+`end` hadn't moved, `p2` was still a live, occupied body cell, not a newly vacated one. With `trail > 0`
+active this stamped a still-live segment with the red hazard tile and silently decremented the trail budget
+without laying a real hazard behind the snake; this is also a more-frequent variant of the older "still open"
+`end-1` erase bug (section 5), since food-growth is common and a tightly coiled snake is not.
+
+**Fix applied:** `snake_draw_tail(s, tail_moved)` gained a `tail_moved` parameter; the erase-or-trail branch
+that touches `p2` now runs only when `tail_moved` is set. `snake_advance` computes it per call (`1` unless the
+tail was suppressed by growth, i.e. `grow > 0 && length < SNAKE_MAX`), and in that same branch immediately
+sets `snake.trail = 0` - confirmed intentional: growth cancels an active trail outright rather than pausing
+it. The two `snake_punish` call sites and the initial per-level draw always pass `1` (the tail genuinely
+moved, or it's the first draw of the level).
+
+Design considered and rejected: pausing the trail (skip laying a cell on a growth tick, keep the remaining
+budget for later) - decided against; growth should cancel the effect immediately instead.

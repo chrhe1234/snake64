@@ -269,18 +269,22 @@ void snake_draw_head(uint8_t s) {
 }
 
 // draw tail of the snake (last two pieces and a final erase if necessary)
-void snake_draw_tail(uint8_t s) {
+// tail_moved must be 0 when growth suppressed the tail advance this tick, so the cell
+// behind the tail (still occupied by the live body) is left untouched
+void snake_draw_tail(uint8_t s, uint8_t tail_moved) {
 	if (s == 1) {
 		gfx_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], S1_COLOR, SP_TAIL2);
 		uint8_t p1 = inc8(snake1.end);
 		gfx_set_xy(snake1.x[p1], snake1.y[p1], S1_COLOR, SP_TAIL1);
-		uint8_t p2 = dec8(snake1.end);
-		if (snake1.x[p2] != 0xff) {
-			if (snake1.trail == 0)
-				gfx_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR, SP_EMPTY);
-			else {
-				snake1.trail--;
-				gfx_set_xy(snake1.x[p2], snake1.y[p2], C64_LIGHT_RED, SP_TAIL2);
+		if (tail_moved) {
+			uint8_t p2 = dec8(snake1.end);
+			if (snake1.x[p2] != 0xff) {
+				if (snake1.trail == 0)
+					gfx_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR, SP_EMPTY);
+				else {
+					snake1.trail--;
+					gfx_set_xy(snake1.x[p2], snake1.y[p2], C64_LIGHT_RED, SP_TAIL2);
+				}
 			}
 		}
 		return;
@@ -289,13 +293,15 @@ void snake_draw_tail(uint8_t s) {
 		gfx_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], S2_COLOR, SP_TAIL2);
 		uint8_t p1 = inc8(snake2.end);
 		gfx_set_xy(snake2.x[p1], snake2.y[p1], S2_COLOR, SP_TAIL1);
-		uint8_t p2 = dec8(snake2.end);
-		if (snake2.x[p2] != 0xff) {
-			if (snake2.trail == 0)
-				gfx_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR, SP_EMPTY);
-			else {
-				snake2.trail--;
-				gfx_set_xy(snake2.x[p2], snake2.y[p2], C64_LIGHT_RED, SP_TAIL2);
+		if (tail_moved) {
+			uint8_t p2 = dec8(snake2.end);
+			if (snake2.x[p2] != 0xff) {
+				if (snake2.trail == 0)
+					gfx_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR, SP_EMPTY);
+				else {
+					snake2.trail--;
+					gfx_set_xy(snake2.x[p2], snake2.y[p2], C64_LIGHT_RED, SP_TAIL2);
+				}
 			}
 		}
 		return;
@@ -361,7 +367,7 @@ void snake_punish(uint8_t s) {
 			update_score = 1;
 			snake1.length--;
 			snake1.end++;
-			snake_draw_tail(1);
+			snake_draw_tail(1, 1);
 			snd_play_collision();
 		}
 		return;
@@ -377,7 +383,7 @@ void snake_punish(uint8_t s) {
 			update_score = 1;
 			snake2.length--;
 			snake2.end++;
-			snake_draw_tail(2);
+			snake_draw_tail(2, 1);
 			snd_play_collision();
 		}
 		return;
@@ -390,6 +396,7 @@ void food_deactivate(uint8_t x, uint8_t y);
 // advance snake in the correct direction
 void snake_advance(uint8_t s) {
 	uint8_t nx, ny, content;
+	uint8_t tail_moved = 1;			// 0 when growth suppresses the tail advance this tick
 	if (s == 1) {
 		if (snake1.status != SNAKE_ACTIVE)
 			return;
@@ -421,9 +428,11 @@ void snake_advance(uint8_t s) {
 		snake1.y[snake1.start] = ny;
 		if (snake1.grow > 0) {
 			snake1.grow--;
-			if (snake1.length < SNAKE_MAX)
+			if (snake1.length < SNAKE_MAX) {
 				snake1.length++;
-			else
+				tail_moved = 0;
+				snake1.trail = 0;	// growth cancels an active hazardous trail immediately
+			} else
 				snake1.end++;
 		} else {
 			snake1.end++;
@@ -460,16 +469,18 @@ void snake_advance(uint8_t s) {
 		snake2.y[snake2.start] = ny;
 		if (snake2.grow > 0) {
 			snake2.grow--;
-			if (snake2.length < SNAKE_MAX)
+			if (snake2.length < SNAKE_MAX) {
 				snake2.length++;
-			else
+				tail_moved = 0;
+				snake2.trail = 0;	// growth cancels an active hazardous trail immediately
+			} else
 				snake2.end++;
 		} else {
 			snake2.end++;
 		}
 	}
 	snake_draw_head(s);
-	snake_draw_tail(s);
+	snake_draw_tail(s, tail_moved);
 }
 
 // initialize, reset both snakes, reset the score if reset_score != 0
@@ -768,7 +779,7 @@ void event_init() {
 
 // add the given event type if a slot is available
 void event_add(enum EventType t) {
-	uint8_t rng64;
+	uint8_t row;
 	uint8_t ndx = 0;
 	while (event[ndx].active) {
 		ndx++;
@@ -782,8 +793,9 @@ void event_add(enum EventType t) {
 		case BARREL:
 			event[ndx].active = 1;
 			event[ndx].type = t;
-			rng64 = (rng_next() & 0x3f);
-			event[ndx].ypos = SPR_OFFSET_Y + 8 + (rng64 << 1) + (rng64 >> 1);
+			row = (rng_next() % 22) + 1;
+			// ypos set so that the sprite center is in the middle of a row
+			event[ndx].ypos = (row << 3) + 4 + SPR_OFFSET_Y - 10;
 			if (rng_next() & 1) {
 				event[ndx].xpos = 0;
 				event[ndx].xdir = 1;
@@ -1056,10 +1068,10 @@ void game_loop(void) {
 
 		snake_draw_head(1);
 		snake_draw_body(1);
-		snake_draw_tail(1);
+		snake_draw_tail(1, 1);
 		snake_draw_head(2);
 		snake_draw_body(2);
-		snake_draw_tail(2);
+		snake_draw_tail(2, 1);
 
 		// set up food
 		food_init();
