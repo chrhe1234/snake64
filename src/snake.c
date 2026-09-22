@@ -93,6 +93,7 @@ void snake_reset(uint8_t s, uint8_t reset_score) {
 			snake1.score[2] = 0;
 			snake1.score[3] = 0;
 		}
+		snake1.trail = 0;
 		return;
 	}
 	if (s == 2) {
@@ -115,6 +116,7 @@ void snake_reset(uint8_t s, uint8_t reset_score) {
 			snake2.score[2] = 0;
 			snake2.score[3] = 0;
 		}
+		snake2.trail = 0;
 		return;
 	}
 }
@@ -274,7 +276,12 @@ void snake_draw_tail(uint8_t s) {
 		gfx_set_xy(snake1.x[p1], snake1.y[p1], S1_COLOR, SP_TAIL1);
 		uint8_t p2 = dec8(snake1.end);
 		if (snake1.x[p2] != 0xff) {
-			gfx_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR, SP_EMPTY);
+			if (snake1.trail == 0)
+				gfx_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR, SP_EMPTY);
+			else {
+				snake1.trail--;
+				gfx_set_xy(snake1.x[p2], snake1.y[p2], C64_LIGHT_RED, SP_TAIL2);
+			}
 		}
 		return;
 	}
@@ -284,7 +291,12 @@ void snake_draw_tail(uint8_t s) {
 		gfx_set_xy(snake2.x[p1], snake2.y[p1], S2_COLOR, SP_TAIL1);
 		uint8_t p2 = dec8(snake2.end);
 		if (snake2.x[p2] != 0xff) {
-			gfx_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR, SP_EMPTY);
+			if (snake2.trail == 0)
+				gfx_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR, SP_EMPTY);
+			else {
+				snake2.trail--;
+				gfx_set_xy(snake2.x[p2], snake2.y[p2], C64_LIGHT_RED, SP_TAIL2);
+			}
 		}
 		return;
 	}
@@ -733,7 +745,8 @@ void food_check() {
 
 enum EventType {
 	HEART,
-	SCORPION
+	SCORPION,
+	BARREL
 };
 
 typedef struct {
@@ -763,24 +776,12 @@ void event_add(enum EventType t) {
 			return;
 	}
 	switch (t) {
+		// spawning behaviour is the same for all three events
 		case HEART:
-			event[ndx].active = 1;
-			event[ndx].type = HEART;
-			rng64 = (rng_next() & 0x3f);
-			event[ndx].ypos = SPR_OFFSET_Y + 8 + (rng64 << 1) + (rng64 >> 1);
-			if (rng_next() & 1) {
-				event[ndx].xpos = 0;
-				event[ndx].xdir = 1;
-			} else {
-				event[ndx].xpos = 320 + SPR_OFFSET_X;
-				event[ndx].xdir = 0;
-			}
-			event[ndx].animate_counter = 0;
-			event[ndx].animate_state = 0;
-			break;
 		case SCORPION:
+		case BARREL:
 			event[ndx].active = 1;
-			event[ndx].type = SCORPION;
+			event[ndx].type = t;
 			rng64 = (rng_next() & 0x3f);
 			event[ndx].ypos = SPR_OFFSET_Y + 8 + (rng64 << 1) + (rng64 >> 1);
 			if (rng_next() & 1) {
@@ -799,6 +800,7 @@ void event_add(enum EventType t) {
 const uint8_t heart_animate[] = {3, 4, 5, 4, 3};
 const uint8_t scorpion_animate[] = {0, 1, 2, 1, 0};
 const uint8_t scorpion_animate_flipped[] = {6, 7, 8, 7, 6};
+const uint8_t barrel_animate[] = {9, 10, 11, 11, 9};
 
 // process all events including display updates, call once per frame
 void event_process() {
@@ -846,11 +848,7 @@ void event_process() {
 							spr_show(i, 1);
 							spr_color(i, C64_PURPLE);
 							spr_move(i, event[i].xpos, event[i].ypos);
-						} else {
-							spr_show(i, 0);
 						}
-					} else {
-						spr_show(i, 0);
 					}
 					break;
 				case SCORPION:
@@ -894,14 +892,54 @@ void event_process() {
 							spr_show(i, 1);
 							spr_color(i, C64_YELLOW);
 							spr_move(i, event[i].xpos, event[i].ypos);
-						} else {
-							spr_show(i, 0);
 						}
+					}
+					break;
+				case BARREL:
+					if (event[i].xdir) {
+						event[i].xpos++;
+						if (event[i].xpos > (SPR_OFFSET_X + 320 - 8))
+							event[i].active = 0;
 					} else {
-						spr_show(i, 0);
+						event[i].xpos--;
+						if (event[i].xpos < (SPR_OFFSET_X - 16))
+							event[i].active = 0;
+					}
+					if (event[i].active) {
+						event[i].animate_counter++;
+						if (event[i].animate_counter >= 3) {
+							event[i].animate_counter = 0;
+							event[i].animate_state++;
+							if (event[i].animate_state >= 5)
+								event[i].animate_state = 0;
+						}
+						// check collision with snake -> trigger tail extension and disable barrel
+						uint8_t xc = (uint8_t) ((event[i].xpos - SPR_OFFSET_X + 12) >> 3);
+						uint8_t yc = (event[i].ypos - SPR_OFFSET_Y + 10) >> 3;
+						uint8_t chr = gfx_scr_get_xy(xc, yc);
+						if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_BODY || chr == SP_TAIL2) {
+							uint8_t clr = gfx_clr_get_xy(xc, yc);
+							if (clr == S1_COLOR) {
+								snake1.trail = 5;
+								event[i].active = 0;
+							}
+							if (clr == S2_COLOR) {
+								snake2.trail = 5;
+								event[i].active = 0;
+							}
+						}
+						if (event[i].active) {
+							spr_image(i, 48 + barrel_animate[event[i].animate_state]);
+							spr_show(i, 1);
+							spr_color(i, C64_LIGHT_RED);
+							spr_move(i, event[i].xpos, event[i].ypos);
+						}
 					}
 					break;
 			}
+			// disable sprite if event was switched off
+			if (!event[i].active)
+				spr_show(i, 0);
 		}
 	}
 }
@@ -909,7 +947,7 @@ void event_process() {
 // ############################################################### game core routines
 
 void game_hazard_map(uint8_t config) {
-	switch(config & 0x03) {
+	switch(config % 5) {
 		case 0:
 			// no obstacles
 			break;
@@ -948,6 +986,28 @@ void game_hazard_map(uint8_t config) {
 				}
 			}
 			break;
+		case 4:
+			// four L-like obstacles
+			for (uint8_t x = 0; x <= 10; x++) {
+				gfx_draw_hazard(3 + x, 3);
+				gfx_draw_hazard(6 + x, 9);
+				gfx_draw_hazard(6 + x, 14);
+				gfx_draw_hazard(3 + x, 19);
+				gfx_draw_hazard(26 + x, 3);
+				gfx_draw_hazard(23 + x, 9);
+				gfx_draw_hazard(23 + x, 14);
+				gfx_draw_hazard(26 + x, 19);
+			}
+			for (uint8_t y = 0; y <= 3; y++) {
+				gfx_draw_hazard(3, 3 + y);
+				gfx_draw_hazard(36, 3 + y);
+				gfx_draw_hazard(3, 16 + y);
+				gfx_draw_hazard(36, 16 + y);
+				gfx_draw_hazard(16, 6 + y);
+				gfx_draw_hazard(23, 6 + y);
+				gfx_draw_hazard(16, 14 + y);
+				gfx_draw_hazard(23, 14 + y);
+			}
 		default:
 			break;
 	}
@@ -957,6 +1017,7 @@ void game_hazard_map(uint8_t config) {
 #define COMPUTER_TICKS		3		// number of frames between computer moves, must be > 2
 #define FOOD_TICKS			50		// number of frames between food checks
 #define LEVEL_TIMER_TICKS	50		// number of frames between level timer ticks (e.g. 50)
+#define EVENT_SPAWN_TICKS	50		// number of frames between event spawns
 
 #define PLAYER_VS_PLAYER	0		// p v p
 #define PLAYER_VS_COMPUTER	1		// p v e
@@ -965,20 +1026,20 @@ uint8_t game_mode = PLAYER_VS_PLAYER;
 
 const uint8_t level_timer_char[] = {32, 101, 97, 234, 224};
 
-char level_str[] = S"LEVEL ##";
+char level_str[] = S"LEVEL ## OF 50";
 
 void game_loop(void) {
 	uint8_t first_level = 1;		// first level of the game, only reset
-	uint8_t level = 0;				// current level (0..63)
+	uint8_t level = 1;				// current level (1..50)
 	uint8_t	stop = 0;
 
 	while (!stop) {
 		// display current level for one second
 		gfx_scr_set(32);
 		gfx_clr_set(1);
-		level_str[6] = ((level + 1) / 10) + 48;
-		level_str[7] = ((level + 1) % 10) + 48;
-		gfx_print_xy(16, 12, C64_WHITE, level_str);
+		level_str[6] = (level / 10) + 48;
+		level_str[7] = (level % 10) + 48;
+		gfx_print_xy(13, 12, C64_WHITE, level_str);
 		for(uint8_t i = 0; i < 50; i++)
 			gfx_wait_frame_end();
 
@@ -990,7 +1051,7 @@ void game_loop(void) {
 
 		// set up screen
 		gfx_setup_game_screen();
-		game_hazard_map(level);
+		game_hazard_map(level - 1);
 		gfx_update_score();
 
 		snake_draw_head(1);
@@ -1010,6 +1071,7 @@ void game_loop(void) {
 		uint8_t computer_counter = 0;
 		uint8_t food_counter = 0;
 		uint8_t level_timer_counter = 0;
+		uint8_t event_spawn_counter = 0;
 
 		uint8_t level_timer1 = 9;			// 9 main ticks, do not change
 		uint8_t level_timer2 = 4;			// 4 sub ticks, do not change
@@ -1046,6 +1108,7 @@ void game_loop(void) {
 			advance_counter++;
 			food_counter++;
 			level_timer_counter++;
+			event_spawn_counter++;
 
 			if (advance_counter >= ADVANCE_TICKS) {
 				if (snake1.status == SNAKE_ACTIVE) {
@@ -1062,10 +1125,28 @@ void game_loop(void) {
 						snake_computer(2);
 					computer_counter = 0;
 				} else {
-					// food checks only occur when nothing else happens, it can take a significant amount of time
-					if (food_counter >= FOOD_TICKS) {
-						food_check();
-						food_counter = 0;
+					// event spawning only happens when the timer is up and only when there's no snake advancing/drawing
+					if (event_spawn_counter >= EVENT_SPAWN_TICKS) {
+						event_spawn_counter = 0;
+						switch (rng_next() & 0x03) {
+							case 0:
+								event_add(HEART);
+								break;
+							case 1:
+								event_add(SCORPION);
+								break;
+							case 2:
+								event_add(BARREL);
+								break;
+							default:
+								break;
+						}
+					} else {
+						// food checks only occur when nothing else happens, it can take a significant amount of time
+						if (food_counter >= FOOD_TICKS) {
+							food_check();
+							food_counter = 0;
+						}
 					}
 				}
 			}
@@ -1082,8 +1163,6 @@ void game_loop(void) {
 						break;
 					else {
 						level_timer1--;
-						// event_add(HEART);
-						event_add(SCORPION);
 					}
 				}
 			}
@@ -1097,11 +1176,14 @@ void game_loop(void) {
 		}
 		gfx_spr_hide_all();
 		gfx_fade_to_black();
-		level = (level + 1) & 0x3f;
+
+		level++;
+		if (level > 50)
+			level = 50;
+
 		// no further levels if both snakes are dead
 		if (snake1.status == SNAKE_DEAD && snake2.status == SNAKE_DEAD)
 			stop++;
-			// break;
 	}
 }
 

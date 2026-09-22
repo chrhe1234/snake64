@@ -27,6 +27,7 @@ typedef struct {
     uint8_t	grow;					// number of rounds the snake should keep growing
     uint8_t	stuck;					// number of consecutive blocked advance attempts
     int8_t score[4];				// score in individual digits, int (!), no uint
+    uint8_t trail;                  // number of rounds the snake leaves a hazardous trail behind
 } Snake;
 
 #define SNAKE_SCORE_OFF 519         // offset of score array in Snake struct
