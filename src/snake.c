@@ -283,7 +283,7 @@ void snake_draw_tail(uint8_t s, uint8_t tail_moved) {
 					gfx_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR, SP_EMPTY);
 				else {
 					snake1.trail--;
-					gfx_set_xy(snake1.x[p2], snake1.y[p2], C64_LIGHT_RED, SP_TAIL2);
+					gfx_set_xy(snake1.x[p2], snake1.y[p2], C64_CYAN, SP_TAIL2);
 				}
 			}
 		}
@@ -300,7 +300,7 @@ void snake_draw_tail(uint8_t s, uint8_t tail_moved) {
 					gfx_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR, SP_EMPTY);
 				else {
 					snake2.trail--;
-					gfx_set_xy(snake2.x[p2], snake2.y[p2], C64_LIGHT_RED, SP_TAIL2);
+					gfx_set_xy(snake2.x[p2], snake2.y[p2], C64_CYAN, SP_TAIL2);
 				}
 			}
 		}
@@ -702,7 +702,7 @@ typedef struct {
 #define FOOD_INACTIVE		0
 #define FOOD_ACTIVE			1
 #define FOOD_SPAWN_TRIES	5
-#define FOOD_DURATION		10
+#define FOOD_DURATION		16				// stick to something is easy to do using integer arithmetics and hope the compiler optimizes it
 
 Food food[FOOD_MAX];
 
@@ -723,19 +723,23 @@ void food_deactivate(uint8_t x, uint8_t y) {
 
 // checks if food needs to spawn or despawn
 void food_check() {
+	uint8_t search_performed = 0;
 	for (uint8_t i = 0; i < FOOD_MAX; i++) {
 		if (food[i].active == FOOD_INACTIVE) {
-			// food inactive -> spawn
-			for (uint8_t j = 0; j < FOOD_SPAWN_TRIES; j++) {
-				uint8_t x = 1 + (rng_next() % 38); // oscar64 modulo is sufficiently fast
-				uint8_t y = 1 + (rng_next() % 22);
-				if (gfx_scr_get_xy(x, y) == TILE_EMPTY) {
-					food[i].x = x;
-					food[i].y = y;
-					food[i].age = FOOD_DURATION + (rng_next() % FOOD_DURATION);
-					food[i].active = 1;
-					gfx_draw_food(x, y);
-					break;
+			// food inactive -> spawn but only once per check because it's expensive
+			if (!search_performed) {
+				search_performed = 1;
+				for (uint8_t j = 0; j < FOOD_SPAWN_TRIES; j++) {
+					uint8_t x = 1 + (rng_next() % 38); // oscar64 modulo is sufficiently fast
+					uint8_t y = 1 + (rng_next() % 22);
+					if (gfx_scr_get_xy(x, y) == TILE_EMPTY) {
+						food[i].x = x;
+						food[i].y = y;
+						food[i].age = FOOD_DURATION + (rng_next() % FOOD_DURATION);
+						food[i].active = 1;
+						gfx_draw_food(x, y);
+						break;
+					}
 				}
 			}
 		} else {
@@ -809,6 +813,64 @@ void event_add(enum EventType t) {
 	}
 }
 
+// check sprite collision with snakes, return 0 if none, snake number otherwise, (x is 0..319 + SPR_OFFSET_X and needs to be 16 bit)
+uint8_t event_check_collision(uint16_t x, uint8_t y) {
+	uint8_t clr, chr;
+
+	// top character row overlapping with sprite, always on the screen (0..24), yc + 1 is always on the screen too, see above
+	uint8_t yc = (y - SPR_OFFSET_Y + 10 - 4) >> 3;
+
+	// left character column overlapping with sprites, can be off the screen if x + 8 < SPR_OFFSET, which can happen during movement to the left
+	uint8_t xcl = (uint8_t) ((x - SPR_OFFSET_X + 12 - 4) >> 3);
+	uint8_t skip_left = x + 8 < SPR_OFFSET_X ? 1 : 0;
+
+	// right character column overlapping with sprites, can be off the screen if x + 12 >= 320 + SPR_OFFSET_X, which can happen during movement to the left
+	uint8_t xcr = (uint8_t) ((x - SPR_OFFSET_X + 12 + 4) >> 3);
+	uint8_t skip_right = x + 8 >= SPR_OFFSET_X + 330 ? 1 : 0;
+
+	// test left column
+	if (!skip_left) {
+		chr = gfx_scr_get_xy(xcl, yc);
+		if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_TAIL2 || chr == SP_BODY) {
+			clr = gfx_clr_get_xy(xcl, yc);
+			if (clr == S1_COLOR)
+				return 1;
+			if (clr == S2_COLOR)
+				return 2;
+		}
+		chr = gfx_scr_get_xy(xcl, yc + 1);
+		if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_TAIL2 || chr == SP_BODY) {
+			clr = gfx_clr_get_xy(xcl, yc + 1);
+			if (clr == S1_COLOR)
+				return 1;
+			if (clr == S2_COLOR)
+				return 2;
+		}
+	}
+
+	// test right column
+	if (!skip_right) {
+		chr = gfx_scr_get_xy(xcr, yc);
+		if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_TAIL2 || chr == SP_BODY) {
+			clr = gfx_clr_get_xy(xcr, yc);
+			if (clr == S1_COLOR)
+				return 1;
+			if (clr == S2_COLOR)
+				return 2;
+		}
+		chr = gfx_scr_get_xy(xcr, yc + 1);
+		if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_TAIL2 || chr == SP_BODY) {
+			clr = gfx_clr_get_xy(xcr, yc + 1);
+			if (clr == S1_COLOR)
+				return 1;
+			if (clr == S2_COLOR)
+				return 2;
+		}
+	}
+
+	return 0;
+}
+
 const uint8_t heart_animate[] = {3, 4, 5, 4, 3};
 const uint8_t scorpion_animate[] = {0, 1, 2, 1, 0};
 const uint8_t scorpion_animate_flipped[] = {6, 7, 8, 7, 6};
@@ -837,23 +899,19 @@ void event_process() {
 							if (event[i].animate_state >= 5)
 								event[i].animate_state = 0;
 						}
-						// check collision with snake head -> consume and disable event
-						uint8_t xc = (uint8_t) ((event[i].xpos - SPR_OFFSET_X + 12) >> 3);
-						uint8_t yc = (event[i].ypos - SPR_OFFSET_Y + 10) >> 3;
-						if (gfx_scr_get_xy(xc, yc) == SP_HEAD) {
-							uint8_t clr = gfx_clr_get_xy(xc, yc);
-							if (clr == S1_COLOR) {
-								snake_inc_score(1, 5);
-								update_score = 1;
-								snd_play_eat();
-								event[i].active = 0;
-							}
-							if (clr == S2_COLOR) {
-								snake_inc_score(2, 5);
-								update_score = 1;
-								snd_play_eat();
-								event[i].active = 0;
-							}
+						// check collision with snake -> consume and disable event
+						uint8_t collision = event_check_collision(event[i].xpos, event[i].ypos);
+						if (collision == 1) {
+							snake_inc_score(1, 5);
+							update_score = 1;
+							snd_play_eat();
+							event[i].active = 0;
+						}
+						if (collision == 2) {
+							snake_inc_score(2, 5);
+							update_score = 1;
+							snd_play_eat();
+							event[i].active = 0;
 						}
 						if (event[i].active) {
 							spr_image(i, 48 + heart_animate[event[i].animate_state]);
@@ -881,20 +939,15 @@ void event_process() {
 							if (event[i].animate_state >= 5)
 								event[i].animate_state = 0;
 						}
-						// check collision with snake -> hurt and disable scorpion
-						uint8_t xc = (uint8_t) ((event[i].xpos - SPR_OFFSET_X + 12) >> 3);
-						uint8_t yc = (event[i].ypos - SPR_OFFSET_Y + 10) >> 3;
-						uint8_t chr = gfx_scr_get_xy(xc, yc);
-						if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_BODY || chr == SP_TAIL2) {
-							uint8_t clr = gfx_clr_get_xy(xc, yc);
-							if (clr == S1_COLOR) {
-								snake_punish(1);
-								event[i].active = 0;
-							}
-							if (clr == S2_COLOR) {
-								snake_punish(2);
-								event[i].active = 0;
-							}
+						// check collision with snake -> punish and disable event
+						uint8_t collision = event_check_collision(event[i].xpos, event[i].ypos);
+						if (collision == 1) {
+							snake_punish(1);
+							event[i].active = 0;
+						}
+						if (collision == 2) {
+							snake_punish(2);
+							event[i].active = 0;
 						}
 						if (event[i].active) {
 							if (!event[i].xdir)
@@ -926,24 +979,23 @@ void event_process() {
 								event[i].animate_state = 0;
 						}
 						// check collision with snake -> trigger tail extension and disable barrel
-						uint8_t xc = (uint8_t) ((event[i].xpos - SPR_OFFSET_X + 12) >> 3);
-						uint8_t yc = (event[i].ypos - SPR_OFFSET_Y + 10) >> 3;
-						uint8_t chr = gfx_scr_get_xy(xc, yc);
-						if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_BODY || chr == SP_TAIL2) {
-							uint8_t clr = gfx_clr_get_xy(xc, yc);
-							if (clr == S1_COLOR) {
-								snake1.trail = 5;
-								event[i].active = 0;
-							}
-							if (clr == S2_COLOR) {
-								snake2.trail = 5;
-								event[i].active = 0;
-							}
+						uint8_t collision = event_check_collision(event[i].xpos, event[i].ypos);
+						if (collision == 1) {
+							snake1.grow = 0;
+							snake1.trail = 8;
+							event[i].active = 0;
+							snd_play_bounce();
+						}
+						if (collision == 2) {
+							snake2.grow = 0;
+							snake2.trail = 8;
+							event[i].active = 0;
+							snd_play_bounce();
 						}
 						if (event[i].active) {
 							spr_image(i, 48 + barrel_animate[event[i].animate_state]);
 							spr_show(i, 1);
-							spr_color(i, C64_LIGHT_RED);
+							spr_color(i, C64_CYAN);
 							spr_move(i, event[i].xpos, event[i].ypos);
 						}
 					}

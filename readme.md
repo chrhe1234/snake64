@@ -4,13 +4,13 @@
 
 ## To-Do
 
+* Fix performance issue caused by event processing.
+
 * Event spawning should be controlled and level-dependent. Levels range from 1 to 50 max.
 
 * Wrap CIA access by sei/cli so they cannot be interrupted.
 
 * Last time sound blip should be a slightly longer higher tone that signals the end of the level.
-
-* A sound for touching a barrel is missing. And we need to change the color for the barrel to something else.
 
 * Computer player: Keep the current 5×5 neighbourhood evaluation plus scan-ahead approach. Refine only when specific weaknesses show up during playtesting.
 
@@ -23,6 +23,10 @@
 * Sprites are from $0C00 to $1000, which is enough space for 16 sprites.
 
 ## Done
+
+* A sound for touching a barrel is missing. And we need to change the color for the barrel to something else.
+
+* A lot of hits are still missed using the current single point check.
 
 * Levels: Create obstacle layouts with progressively more difficult navigation. Decide how hazards are incorporated into level design. Corridors could be added. Maybe also 8 or more L-type shapes.
 

@@ -67,7 +67,7 @@ const Sound sound_smash = {
     .duration = 15
 };
 
-// a bouncing sound
+// sound for snake running into a barrel, a bouncing sound
 const Sound sound_bounce = {
     .freq     = 0x0900,
     .pwm      = 0x0500,
