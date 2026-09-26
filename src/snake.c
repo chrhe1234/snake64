@@ -569,6 +569,77 @@ uint8_t abs8(int8_t v) {
 		return (uint8_t) -v;
 }
 
+uint8_t sce_empty, sce_food, sce_hazard;	// number of empty and food tiles found during exploration
+uint8_t sce_i;
+
+const uint8_t sce_offset[60] = {		// offset that needs to be added to probe the next screen position, x0 and y0 always top left
+	+1, +1, +1, +1, +36,	+1, +1, +1, +1, +36,	+1, +1, +1, +1,	0,					// walk the screen when the snake heading is up
+	+1, +1, +38,	+1, +1, +38,	+1, +1, +38,	+1, +1, +38,	+1, +1, 0,			// walk the screen when the snake heading is right
+	+1, +1, +1, +1, +36,	+1, +1, +1, +1, +36,	+1, +1, +1, +1, 0,					// walk the screen when the snake heading down
+	+1, +1, +38,	+1, +1, +38,	+1, +1, +38,	+1, +1, +38,	+1, +1, 0			// walk the screen when the snake heading is left
+};
+
+const uint8_t sce_weight[60] = {
+	+2, +3, +4, +3, +2,		+3, +4, +5, +4, +3,		+4, +5, +6, +5, +4,					// weights for the position when heading up
+	+4, +3, +2,		+5, +4, +3,		+6, +5, +4,		+5, +4, +3,		+4, +3, +2, 		// weights for the position when heading right
+	+4, +5, +6, +5, +4,		+3, +4, +5, +4, +3,		+2, +3, +4, +3, +2,					// weights for the position when heading down
+	+2, +3, +4,		+3, +4, +5,		+4, +5, +6,		+3, +4, +5,		+2, +3, +4, 		// weights for the position when heading left
+};
+
+void snake_computer_explore(uint8_t cx, uint8_t cy, uint8_t sce_offset_ndx) {
+	__asm {
+		ldy     cy					// put top (left) screen row address into load instruction
+		lda		scr_row_low,y
+		sta		_load+1
+		lda		scr_row_high,y
+		sta		_load+2
+
+		lda		#0					// init counters
+		sta		sce_empty
+		sta		sce_food
+		sta		sce_hazard
+		lda		#15
+		sta		sce_i
+
+		ldy		sce_offset_ndx		// load index
+
+		ldx     cx
+	_loop:
+	_load:
+		lda		$ffff,x				// modified to actual screen address
+
+		cmp		#TILE_EMPTY			// is it empty?
+		bne		_c1
+		inc		sce_empty
+		jmp		_continue
+
+	_c1:
+		cmp		#TILE_FOOD			// is it food?
+		bne		_c2
+		lda		sce_food
+		clc
+		adc		sce_weight,y
+		sta		sce_food
+		jmp		_continue
+
+	_c2:
+		lda		sce_hazard			// must be hazard
+		clc
+		adc		sce_weight,y
+		sta		sce_hazard
+
+	_continue:
+		txa							// add offset to x
+		clc
+		adc		sce_offset,y
+		tax
+		iny
+
+		dec		sce_i				// loop
+		bne		_loop
+	}
+}
+
 void snake_computer(uint8_t s) {
 	uint8_t hx, hy, hd;		// snake head position and direction
 	switch (s) {
@@ -623,7 +694,7 @@ void snake_computer(uint8_t s) {
 	int max_score = INT16_MIN;
 	for (uint8_t i = 0; i < 4; i++) {
 		if (snake_dir_available[i] == SDIR_AVAILABLE) {
-			uint8_t empty = 0, hazard = 0, food = 0, empty_ahead = 0;
+			uint8_t empty_ahead = 0;
 			// count number of empty or food spaces ahead in the chosen direction (max of 6)
 			int8_t cx = hx + ddx[i];
 			int8_t cy = hy + ddy[i];
@@ -645,37 +716,50 @@ void snake_computer(uint8_t s) {
 					break;
 				}
 			}
-			// count the number of empty, food and hazardous tiles in the 5x5 area in the direction of interest
-			for (int8_t x = -2; x <= +2; x++) {
-				for (int8_t y = -2; y <= +2; y++) {
-					cx = hx + ddx[i] - x;
-					if (cx < 0)
-						cx = 0;
-					if (cx > 39)
-						cx = 39;
-					cy = hy + ddy[i] - y;
-					if (cy < 0)
-						cy = 0;
-					if (cy > 23)
-						cy = 23;
-					uint8_t c = gfx_scr_get_xy((uint8_t) cx, (uint8_t) cy);
-					if (c == TILE_EMPTY)
-						empty++;
-					if (c == TILE_FOOD) {
-						// the significance of food decreases with distance
-						uint8_t d = abs8(x) + abs8(y);
-						food += 6 - d;
-					}
-					if (c == TILE_HAZARD) {
-						// the significance of a hazard decreases with distance
-						uint8_t d = abs8(x) + abs8(y);
-						hazard += 6 - d;
-					}
-				}
+
+			// evaluate a 5x3 field ahead of the snake in a given direction: empty cells, food and hazards
+			uint8_t cx0, cy0, ndx;
+			switch (i) {
+				case 0:		// up
+					cx0 = hx > 2 ? hx - 2 : 0;
+					cx0 = cx0 > 39 - 4 ? 39 - 4 : cx0;
+					cy0 = hy > 2 ? hy - 2 : 0;
+					cy0 = cy0 > 23 - 2 ? 23 - 2 : cy0;
+					ndx = 0;
+					break;
+				case 1:		// right
+					cx0 = hx;
+					cx0 = cx0 > 39 - 2 ? 39 - 2 : cx0;
+					cy0 = hy > 2 ? hy - 2 : 0;
+					cy0 = cy0 > 23 - 4 ? 23 - 4 : cy0;
+					ndx = 15;
+					break;
+				case 2:		// down
+					cx0 = hx > 2 ? hx - 2 : 0;
+					cx0 = cx0 > 39 - 4 ? 39 - 4 : cx0;
+					cy0 = hy;
+					cy0 = cy0 > 23 - 2 ? 23 - 2 : cy0;
+					ndx = 30;
+					break;
+				case 3:		// left
+					cx0 = hx > 2 ? hx - 2 : 0;
+					cx0 = cx0 > 39 - 2 ? 39 - 2 : cx0;
+					cy0 = hy > 2 ? hy - 2 : 0;
+					cy0 = cy0 > 23 - 4 ? 23 - 4 : cy0;
+					ndx = 45;
+					break;
+				default:
+					cx0 = 0;
+					cy0 = 0;
+					ndx = 0;
+					break;
 			}
-			int score = empty + food - hazard + (rng_next() & 0x03) + 2 * empty_ahead;
+			snake_computer_explore(cx0, cy0, ndx);
+
+			int score = sce_empty + sce_food - sce_hazard + (rng_next() & 0x03) + 2 * empty_ahead;
 			if (i == hd)
 				score += SDIR_STICKINESS;	// bias towards keeping the current direction
+
 			if (score > max_score) {		// track maximum score and store new head direction
 				max_score = score;
 				nhd = i;
@@ -813,6 +897,8 @@ void event_add(enum EventType t) {
 	}
 }
 
+uint8_t ecc_chr_top, ecc_chr_bottom;
+
 // check sprite collision with snakes, return 0 if none, snake number otherwise, (x is 0..319 + SPR_OFFSET_X and needs to be 16 bit)
 uint8_t event_check_collision(uint16_t x, uint8_t y) {
 	uint8_t clr, chr;
@@ -821,26 +907,45 @@ uint8_t event_check_collision(uint16_t x, uint8_t y) {
 	uint8_t yc = (y - SPR_OFFSET_Y + 10 - 4) >> 3;
 
 	// left character column overlapping with sprites, can be off the screen if x + 8 < SPR_OFFSET, which can happen during movement to the left
-	uint8_t xcl = (uint8_t) ((x - SPR_OFFSET_X + 12 - 4) >> 3);
+	uint8_t xc = (uint8_t) ((x - SPR_OFFSET_X + 12 - 4) >> 3);
 	uint8_t skip_left = x + 8 < SPR_OFFSET_X ? 1 : 0;
 
 	// right character column overlapping with sprites, can be off the screen if x + 12 >= 320 + SPR_OFFSET_X, which can happen during movement to the left
-	uint8_t xcr = (uint8_t) ((x - SPR_OFFSET_X + 12 + 4) >> 3);
-	uint8_t skip_right = x + 8 >= SPR_OFFSET_X + 330 ? 1 : 0;
+	uint8_t skip_right = x + 8 >= SPR_OFFSET_X + 320 ? 1 : 0;
 
 	// test left column
 	if (!skip_left) {
-		chr = gfx_scr_get_xy(xcl, yc);
-		if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_TAIL2 || chr == SP_BODY) {
-			clr = gfx_clr_get_xy(xcl, yc);
+		// get character at xc, yc and xc, cy + 1
+		__asm {
+			ldy     yc					// put top screen row address into load instruction
+			lda		scr_row_low,y
+			sta		_load1+1
+			sta		_load2+1
+			lda		scr_row_high,y
+			sta		_load1+2
+			sta		_load2+2
+
+			ldx     xc
+		_load1:
+			lda		$ffff,x				// modified to actual screen row address
+			sta		ecc_chr_top
+			txa							// next row
+			clc
+			adc		#40
+			tax
+		_load2:
+			lda		$ffff,x				// modified to actual screen row address
+			sta		ecc_chr_bottom
+		}
+		if (ecc_chr_top == SP_HEAD || ecc_chr_top == SP_TAIL1 || ecc_chr_top == SP_TAIL2 || ecc_chr_top == SP_BODY) {
+			clr = gfx_clr_get_xy(xc, yc);
 			if (clr == S1_COLOR)
 				return 1;
 			if (clr == S2_COLOR)
 				return 2;
 		}
-		chr = gfx_scr_get_xy(xcl, yc + 1);
-		if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_TAIL2 || chr == SP_BODY) {
-			clr = gfx_clr_get_xy(xcl, yc + 1);
+		if (ecc_chr_bottom == SP_HEAD || ecc_chr_bottom == SP_TAIL1 || ecc_chr_bottom == SP_TAIL2 || ecc_chr_bottom == SP_BODY) {
+			clr = gfx_clr_get_xy(xc, yc + 1);
 			if (clr == S1_COLOR)
 				return 1;
 			if (clr == S2_COLOR)
@@ -850,24 +955,44 @@ uint8_t event_check_collision(uint16_t x, uint8_t y) {
 
 	// test right column
 	if (!skip_right) {
-		chr = gfx_scr_get_xy(xcr, yc);
-		if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_TAIL2 || chr == SP_BODY) {
-			clr = gfx_clr_get_xy(xcr, yc);
+		// get character at xc + 1, yc and xc + 1, cy + 1
+		__asm {
+			ldy     yc					// put top screen row address into load instruction
+			lda		scr_row_low,y
+			sta		_load1+1
+			sta		_load2+1
+			lda		scr_row_high,y
+			sta		_load1+2
+			sta		_load2+2
+
+			ldx     xc
+			inx
+		_load1:
+			lda		$ffff,x				// modified to actual screen row address
+			sta		ecc_chr_top
+			txa							// next row
+			clc
+			adc		#40
+			tax
+		_load2:
+			lda		$ffff,x				// modified to actual screen row address
+			sta		ecc_chr_bottom
+		}
+		if (ecc_chr_top == SP_HEAD || ecc_chr_top == SP_TAIL1 || ecc_chr_top == SP_TAIL2 || ecc_chr_top == SP_BODY) {
+			clr = gfx_clr_get_xy(xc + 1, yc);
 			if (clr == S1_COLOR)
 				return 1;
 			if (clr == S2_COLOR)
 				return 2;
 		}
-		chr = gfx_scr_get_xy(xcr, yc + 1);
-		if (chr == SP_HEAD || chr == SP_TAIL1 || chr == SP_TAIL2 || chr == SP_BODY) {
-			clr = gfx_clr_get_xy(xcr, yc + 1);
+		if (ecc_chr_bottom == SP_HEAD || ecc_chr_bottom == SP_TAIL1 || ecc_chr_bottom == SP_TAIL2 || ecc_chr_bottom == SP_BODY) {
+			clr = gfx_clr_get_xy(xc + 1, yc + 1);
 			if (clr == S1_COLOR)
 				return 1;
 			if (clr == S2_COLOR)
 				return 2;
 		}
 	}
-
 	return 0;
 }
 

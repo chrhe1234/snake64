@@ -35,6 +35,9 @@
 #define S1_COLOR		C64_LIGHT_GREEN
 #define	S2_COLOR		C64_LIGHT_BLUE
 
+extern uint8_t scr_row_low[25];
+extern uint8_t scr_row_high[25];
+
 // set screen RAM
 void gfx_scr_set(uint8_t value);
 

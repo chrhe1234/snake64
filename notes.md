@@ -210,3 +210,141 @@ moved, or it's the first draw of the level).
 
 Design considered and rejected: pausing the trail (skip laying a cell on a growth tick, keep the remaining
 budget for later) - decided against; growth should cancel the effect immediately instead.
+
+
+## 8. Performance pass: computer player and event collision (2026-09-24 .. 2026-09-26)
+
+Triggered by an occasional in-game stutter. Methodology throughout: read the real compiled bytes
+(`snake64.asm`) and count cycles instruction-by-instruction with standard NMOS 6502 timings (branch/page-cross
+penalties estimated, not simulated); build freshness (`snake64.asm` mtime vs `src/*.c` mtime) was checked
+before every measurement in this pass, since a stale listing looks identical to a fresh one. A PAL frame is
+19,650 cycles, NTSC 17,100 (section header).
+
+### 8.1 `food_check`: capped to one search per call
+
+`food_check` used to attempt a spawn search (`FOOD_SPAWN_TRIES` = 5 random tries) for *every* inactive slot in
+one call. Measured worst case (section 3 above): 12,267-12,320 cycles when all 4 slots are inactive at
+once - 62-63 % of a PAL frame, on its own, no concurrency needed to exceed "half a frame". Changed to a
+`search_performed` flag: only the first inactive slot found gets the expensive 5-try search per call; the
+rest just age normally or wait for a later call. `FOOD_DURATION` raised 10 -> 16 (food sits longer, so slots
+go inactive less often, lowering the average trigger rate for the expensive path). New worst case (1 slot's
+5-try search + 3 slots aging): traced at ~3,420 cycles (~17 % of a PAL frame) - both the peak and the
+frequency of hitting it dropped.
+
+### 8.2 `snake_computer`: 5x5 -> 5x3/3x5 footprint, with three real bugs found along the way
+
+The original per-direction scan was a symmetric 5x5 = 25 cells, weighted by Manhattan distance
+(`6 - d`), centred one step into the candidate direction, calling `gfx_scr_get_xy` per cell (measured 49
+cycles/call - see section on the collision check below for why). Rewritten (intentional design change, not
+critiqued): a direction-shaped 15-cell footprint (5 columns x 3 rows for `UP`/`DOWN`, 3 columns x 5 rows for
+`LEFT`/`RIGHT`, `snake.c` `sce_offset[]`/`sce_weight[]`, walked by a new `snake_computer_explore()` inline-asm
+helper that patches one self-modified row address per direction and steps through it via a small offset
+table). Hazard classification also intentionally broadened: any character that is neither `TILE_EMPTY` nor
+`TILE_FOOD` now counts as hazard (previously only `TILE_HAZARD` specifically) - snake bodies, the border and
+trail cells are now visible to this scoring term, not invisible to it.
+
+Three bugs surfaced during review of the rewrite, all now fixed:
+
+1. **Critical - 256-iteration loop instead of 14, for `UP`/`DOWN` only.** The explore loop was a do-while
+   (`dec` then `bne`), and the trip counter was the same parameter (`sce_offset_ndx`) used to seed the
+   starting index into `sce_offset[]`. `LEFT`/`RIGHT` pass `ndx = 14` (correct trip count, incidentally).
+   `UP`/`DOWN` pass `ndx = 0`; decrementing a `uint8_t` `0` wraps to `255`, so the loop ran 256 times instead
+   of 14, walking `sce_offset[]`'s index (`Y`, incremented every iteration with no bound) far past its
+   28-entry length and reading whatever memory followed it as bogus offsets - wrong scores for those two
+   directions and no actual performance win for them either. Fixed by introducing a dedicated `sce_i` counter,
+   unconditionally seeded to a fixed trip count independent of `ndx` (`ndx` now only seeds the starting table
+   index, as intended).
+2. **Silent array corruption from missing commas.** `sce_offset[]`'s four 15-entry line groups had no comma
+   between lines (`... 0<newline>+1, +1, ...`); C parses `0 +1` as a single constant-expression when nothing
+   separates them, so three line boundaries each silently merged two intended elements into one - the array
+   was 57 elements, not 60, and `RIGHT`/`DOWN`/`LEFT`'s data was shifted relative to the fixed `ndx` values
+   (`UP`, being first, was unaffected). No compiler error, since `0 + 1` is a perfectly legal expression.
+   Fixed by adding the missing commas and declaring both `sce_offset[60]` and `sce_weight[60]` with an
+   explicit size, so a future missing comma is a compile-time element-count mismatch, not a silent shift.
+3. **Weight table authored for the wrong footprint shape (`LEFT`/`RIGHT`).** `sce_weight[]`'s `RIGHT`/`LEFT`
+   sections were written in groups of 5 (matching `UP`/`DOWN`'s 5-wide traversal), but `LEFT`/`RIGHT` actually
+   walk 3-wide rows (confirmed from `sce_offset[]`'s own `+1,+1,+38` stepping pattern and the window-clamp
+   code). Traced the actual `(cell, weight)` pairs the old table produced: the dead-centre cell (one step
+   ahead of the head) got weight 5 instead of the intended maximum, and an actual corner cell got the
+   maximum (6) instead of a low value - food/hazard proximity was being scored against geometrically wrong
+   cells for horizontal movement. Fixed by rewriting those two sections in groups of 3; reverified by tracing
+   all four directions' actual `(cell, weight)` pairs against the walk order - all four now consistently
+   follow `weight = 5 +/- (offset along travel axis) - |offset across it|` (the cell one step *behind* the
+   direction-shifted centre gets the max, 6; the centre itself gets 5; not revisited further since the
+   relative-weighting choice itself is a design decision, not a defect). A separate isolated typo in `UP`'s
+   last weight group (`...,+5,+6`, breaking the symmetry the other two groups have) was also fixed to `...,+5,+4`.
+
+Net effect on `snake_computer`'s own cost: worst case (est., structural) ~7,050-7,100 cycles before -> traced
+~5,780 after, about 18-20 % down. Breakdown of the new total: the (now optimised) 15-cell scan is ~41 %, but
+the untouched 6-step look-ahead loop (`snake.c`, the `for j<6` straight-line corridor check) is ~35 % - almost
+as large, since it still calls `gfx_scr_get_xy` fresh per step. It only shares the same row-caching
+opportunity for `LEFT`/`RIGHT` (`cy` constant across the 6 steps; `UP`/`DOWN` need a fresh row every step
+regardless) - flagged as the next candidate, not yet done.
+
+### 8.3 `event_check_collision`: two independent, verified-safe wins
+
+Starting point (measured, no-skip/no-match/mid-screen case, the common path): 488 cycles. Two changes,
+applied in order, each reverified against the compiled listing:
+
+**a) `xcr` is always `xc + 1` - proven, not assumed.** `xcl`'s and `xcr`'s pre-shift expressions differ by
+exactly 8, and `>>3` is division by 8; `floor((n+8)/8) = floor(n/8) + 1` for any integer `n`, and this survives
+the final `(uint8_t)` truncation too (modular arithmetic preserves the +1 relationship). Renaming `xcl` to
+`xc` and writing `xc + 1` at the (up to four) right-column use sites, instead of computing `xcr` from its own
+formula, let the compiler drop the entire independent 16-bit recomputation (~46 cycles) and replace it with a
+single in-place `INC` (5 cycles) on `xc`'s own storage, since the left-column code never needs `xc`'s original
+value again by that point. Verified safe for every skip/no-skip path (the increment only ever fires once, on
+first use). Result: 488 -> 442 cycles.
+
+**b) Two-row read batching via self-modified `lda $ffff,x` + `X += 40`.** `scr_row_low[]`/`scr_row_high[]` and
+`clr_row_low[]`/`clr_row_high[]` (`gfx.c`) are generated as strict `base + row*40` for every row, no
+double-buffering or special-casing - confirmed by reading the literal table-generator code, not assumed. So
+row `yc+1`'s base address is always exactly row `yc`'s base + 40. Implemented as two self-modified
+`lda $ffff,x` instances per column block (one for the `yc` read, one for `yc+1`), both patched with row `yc`'s
+address; the second read reaches `yc+1` by adding 40 to `X` instead of a second row-table lookup. Both
+physical instances must be patched (self-modifying one `lda` does not affect a different, textually-identical
+`lda` elsewhere in the code - confirmed the hard way, see below), which costs two extra `STA`s the first
+naive estimate missed, but this is still far cheaper than a second full row lookup. Result: 442 -> 310 cycles
+(36 % cumulative reduction from the 488 starting point).
+
+Rejected/deferred for now: sharing one patched row-`yc` pair of instructions across *both* columns (not just
+within one column's `yc`/`yc+1` pair) - a further ~59-vs-110-cycle opportunity for the full 4-read case, since
+`xc` and `xc+1` are both on row `yc`. Deferred because it requires hoisting the row patch above both
+`skip_left`/`skip_right` guards and keeping `xc` retrievable after `X` has moved on - workable, but Oscar64
+makes separating the "patch" step from the "load" step across guarded blocks awkward enough that the simpler,
+per-column version (fully self-contained per `skip_*` guard) was kept instead.
+
+### 8.4 Cycle-cost tables (end of this pass)
+
+`event_process` per active event (traced, no collision, still active):
+
+| Piece | Cycles | % of event |
+|---|---|---|
+| `event_check_collision` call (incl. `JSR`) | 316 | 53.8 % |
+| Sprite redraw (`spr_image`/`spr_show`/`spr_color`/`spr_move`) | 112 | 19.1 % |
+| Dispatch (active/type/direction check + move) | 76 | 12.9 % |
+| Collision-result checks + final active-check + loop increment | 44 | 7.5 % |
+| Animate-counter/state update | 39 | 6.6 % |
+| **Total per event** | **587** | 100 % |
+
+Game-loop building blocks, worst case, and per-frame-type totals against the PAL/NTSC budget:
+
+| Section | Runs | Cycles (worst case) |
+|---|---|---|
+| Always-on baseline (`snake_control`, `snd_update`, bg-color, counters) | every frame | ~290 |
+| `event_process`, 8 active events | every frame | ~4,696 |
+| `snake_advance`, per snake, trail active | every 6th frame (x1-2) | ~810/snake |
+| `food_check`, one slot, 5 failed tries | when due | ~3,420 |
+| `snake_computer` | when due, computer mode only | ~5,780 |
+| `event_add` | when due | ~350 (est.) |
+
+| Frame type | Total (worst case) | % PAL (19,650) | % NTSC (17,100) |
+|---|---|---|---|
+| Advance frame | ~6,606 | 33.6 % | 38.6 % |
+| Event-add frame | ~5,336 | 27.2 % | 31.2 % |
+| Food-check frame | ~8,406 | 42.8 % | 49.2 % |
+| Computer-player frame | ~10,766 | 54.8 % | 63.0 % |
+
+Computer-player frame (the heaviest, by construction it's the only one where `event_process` and a scan-heavy
+AI decision can coincide) started this pass at ~12,940 (66 %/76 %); now ~10,766 (55 %/63 %) - about 2,174
+cycles recovered, roughly two-thirds from the `snake_computer` rewrite and the rest from the collision-check
+work. Still the heaviest frame type, no longer close to 3/4 of even the tighter NTSC budget.
