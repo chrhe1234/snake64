@@ -4,10 +4,6 @@
 
 ## To-Do
 
-* Event spawning should be controlled and level-dependent. Levels range from 1 to 50 max.
-
-* Wrap CIA access by sei/cli so they cannot be interrupted.
-
 * Last time sound blip should be a slightly longer higher tone that signals the end of the level.
 
 ## Design notes
@@ -15,13 +11,19 @@
 * One player vs. computer or Two player modes.
 
 * All graphics and the snakes are character based. We use some custom characters that are patched in after copying the
-  character ROM to RAM $3800. Screen RAM stays at $0400.
+  character ROM to RAM \$3800. Screen RAM stays at \$0400.
 
 * Events are sprite-bases. We have a scorpion (enemy), heart (reward), barrel (toxin, tactical, hazardous trail left behind.)
 
-* Sprites are from $0C00 to $1000, which is enough space for 16 sprites.
+* Sprites are from \$0C00 to \$1000, which is enough space for 16 sprites.
 
 ## Done
+
+* 2026-09-27: Spawning should be controlled and level-dependent. Levels range from 1 to 50 max.
+
+* 2026-09-27: CIA access by sei/cli so they cannot be interrupted.
+
+* 2026-09-26: Highscore tracking.
 
 * 2026-09-26: Maybe cosmetic score feedback: Show brief +1, -1, etc. sprites where points are gained or lost. Not enough
   sprite slots for that.

@@ -507,8 +507,11 @@ void snake_init(uint8_t reset_score) {
 
 // return != 0 when stop key is stop_pressed
 uint8_t stop_pressed() {
+	__asm { sei }
 	cia1.pra = 0x7f;
-	if (cia1.prb & 0x80)
+	uint8_t cont = (cia1.prb & 0x80);
+	__asm { cli }
+	if (cont)
 		return 0;
 	else
 		return 1;
@@ -522,6 +525,7 @@ uint8_t stop_pressed() {
 
 void snake_control(uint8_t s) {
 	if (s == 1) {
+		__asm { sei }
 		uint8_t joy = ~cia1.pra;		// joystick 2
 		if ((joy & JOY_LEFT) && snake1.direction != SDIR_RIGHT)
 			snake1.direction = SDIR_LEFT;
@@ -533,9 +537,11 @@ void snake_control(uint8_t s) {
 			snake1.direction = SDIR_DOWN;
 //		if (!(joy & JOY_FIRE))
 //			fire();
+		__asm { cli }
 		return;
 	}
 	if (s == 2) {
+		__asm { sei }
 		uint8_t joy = ~cia1.prb;		// joystick 1
 		if ((joy & JOY_LEFT) && snake2.direction != SDIR_RIGHT)
 			snake2.direction = SDIR_LEFT;
@@ -547,6 +553,7 @@ void snake_control(uint8_t s) {
 			snake2.direction = SDIR_DOWN;
 //		if (!(joy & JOY_FIRE))
 //			fire();
+		__asm { cli }
 		return;
 	}
 }
@@ -885,10 +892,10 @@ void event_add(enum EventType t) {
 			// ypos set so that the sprite center is in the middle of a row
 			event[ndx].ypos = (row << 3) + 4 + SPR_OFFSET_Y - 10;
 			if (rng_next() & 1) {
-				event[ndx].xpos = 0;
+				event[ndx].xpos = 8;
 				event[ndx].xdir = 1;
 			} else {
-				event[ndx].xpos = 320 + SPR_OFFSET_X;
+				event[ndx].xpos = 320 + SPR_OFFSET_X - 8;
 				event[ndx].xdir = 0;
 			}
 			event[ndx].animate_counter = 0;
@@ -897,6 +904,7 @@ void event_add(enum EventType t) {
 	}
 }
 
+// top and bottom character from screen for routine below
 uint8_t ecc_chr_top, ecc_chr_bottom;
 
 // check sprite collision with snakes, return 0 if none, snake number otherwise, (x is 0..319 + SPR_OFFSET_X and needs to be 16 bit)
@@ -1135,8 +1143,8 @@ void event_process() {
 
 // ############################################################### game core routines
 
-void game_hazard_map(uint8_t config) {
-	switch(config % 5) {
+void game_hazard_map(const uint8_t config) {
+	switch(config) {
 		case 0:
 			// no obstacles
 			break;
@@ -1206,7 +1214,14 @@ void game_hazard_map(uint8_t config) {
 #define COMPUTER_TICKS		3		// number of frames between computer moves, must be > 2
 #define FOOD_TICKS			50		// number of frames between food checks
 #define LEVEL_TIMER_TICKS	50		// number of frames between level timer ticks (e.g. 50)
-#define EVENT_SPAWN_TICKS	50		// number of frames between event spawns
+uint8_t EVENT_SPAWN_TICKS =	50;		// number of frames between event spawns
+
+// EVENT_SPAWN_TICKS for every 5 levels (1..5, 6..10, etc.)
+uint8_t EVENT_SPAWN_TICKS_LVL[10] = { 200, 150, 100, 100, 50, 50, 25, 25, 25, 25};
+
+// event spawning probability per every 5 levels, p = number from below / 128
+uint8_t EVENT_SPAWN_FOOD_LVL[10] =		{ 90, 80, 70, 60, 50, 40, 30, 20, 20, 15};
+uint8_t EVENT_SPAWN_BARREL_LVL[10] =	{ 20, 25, 30, 35, 40, 45, 40, 30, 20, 15};
 
 #define PLAYER_VS_PLAYER	0		// p v p
 #define PLAYER_VS_COMPUTER	1		// p v e
@@ -1216,6 +1231,8 @@ uint8_t game_mode = PLAYER_VS_PLAYER;
 const uint8_t level_timer_char[] = {32, 101, 97, 234, 224};
 
 char level_str[] = S"LEVEL ## OF 50";
+
+uint8_t highscore[4] = {0, 0, 0, 0};
 
 void game_loop(void) {
 	uint8_t first_level = 1;		// first level of the game, only reset
@@ -1240,7 +1257,10 @@ void game_loop(void) {
 
 		// set up screen
 		gfx_setup_game_screen();
-		game_hazard_map(level - 1);
+		if (level < 50)
+			game_hazard_map((level - 1) % 5);
+		else
+			game_hazard_map(4);
 		gfx_update_score();
 
 		snake_draw_head(1);
@@ -1261,6 +1281,9 @@ void game_loop(void) {
 		uint8_t food_counter = 0;
 		uint8_t level_timer_counter = 0;
 		uint8_t event_spawn_counter = 0;
+		uint8_t level_ndx = (level - 1) / 5;		// index for level configuration arrays
+
+		EVENT_SPAWN_TICKS = EVENT_SPAWN_TICKS_LVL[level_ndx];
 
 		uint8_t level_timer1 = 9;			// 9 main ticks, do not change
 		uint8_t level_timer2 = 4;			// 4 sub ticks, do not change
@@ -1317,18 +1340,15 @@ void game_loop(void) {
 					// event spawning only happens when the timer is up and only when there's no snake advancing/drawing
 					if (event_spawn_counter >= EVENT_SPAWN_TICKS) {
 						event_spawn_counter = 0;
-						switch (rng_next() & 0x03) {
-							case 0:
-								event_add(HEART);
-								break;
-							case 1:
-								event_add(SCORPION);
-								break;
-							case 2:
+						uint8_t rng = rng_next() & 0x7F;
+						if (rng < EVENT_SPAWN_FOOD_LVL[level_ndx]) {
+							event_add(HEART);
+						} else {
+							if (rng < EVENT_SPAWN_BARREL_LVL[level_ndx] + EVENT_SPAWN_FOOD_LVL[level_ndx]) {
 								event_add(BARREL);
-								break;
-							default:
-								break;
+							} else {
+								event_add(SCORPION);
+							}
 						}
 					} else {
 						// food checks only occur when nothing else happens, it can take a significant amount of time
@@ -1413,6 +1433,12 @@ uint8_t game_menu() {
 	gfx_set_xy(15, 24, S2_COLOR, snake2.score[2] + 48);
 	gfx_set_xy(16, 24, S2_COLOR, snake2.score[1] + 48);
 	gfx_set_xy(17, 24, S2_COLOR, snake2.score[0] + 48);
+	gfx_print_xy(31, 20, C64_LIGHT_RED, S"HIGHSCORE");
+	gfx_set_xy(36, 22, C64_LIGHT_RED, highscore[3] + 48);
+	gfx_set_xy(37, 22, C64_LIGHT_RED, highscore[2] + 48);
+	gfx_set_xy(38, 22, C64_LIGHT_RED, highscore[1] + 48);
+	gfx_set_xy(39, 22, C64_LIGHT_RED, highscore[0] + 48);
+
 
 	while (1) {
 		gfx_print_xy(2+0, 15, C64_LIGHT_GRAY, S"     CURRENTLY PLAYER VS. ");
@@ -1430,6 +1456,40 @@ uint8_t game_menu() {
 	}
 }
 
+void game_update_highscore() {
+	uint8_t hs = 0;
+	for (int8_t i = 3; i >= 0; i--) {
+		if (snake1.score[i] > highscore[i]) {
+			hs = 1;
+			break;
+		}
+		if (snake1.score[i] < highscore[i]) {
+			hs = 0;
+			break;
+		}
+	}
+	if (hs) {
+		for (uint8_t i = 0; i < 4; i++)
+			highscore[i] = snake1.score[i];
+	}
+
+	hs = 0;
+	for (int8_t i = 3; i >= 0; i--) {
+		if (snake2.score[i] > highscore[i]) {
+			hs = 1;
+			break;
+		}
+		if (snake2.score[i] < highscore[i]) {
+			hs = 0;
+			break;
+		}
+	}
+	if (hs) {
+		for (uint8_t i = 0; i < 4; i++)
+			highscore[i] = snake2.score[i];
+	}
+}
+
 int main(void) {
 	rng_init();
 	gfx_init();
@@ -1440,6 +1500,7 @@ int main(void) {
 			break;
 		game_loop();
 		game_over();
+		game_update_highscore();
 	}
 	snd_stop_all();
 	gfx_exit();
