@@ -17,7 +17,7 @@ exiting the game. The frequency of events increases with level and they become i
 That's all there is to it for now.
 
 The game is written mostly in C and some assembly language and can be compiled with Oscar64
-(https://github.com/drmortalwombat/oscar64). You can use the included build script in Linux. Or simply used the disk
+(https://github.com/drmortalwombat/oscar64). You can use the included build script in Linux. Or simply use/run the disk
 image or the prg file.
 
 ## To-Do
@@ -26,23 +26,22 @@ image or the prg file.
 
 ## Design notes
 
-* One player vs. computer or two player modes. Levels range from 1 to 50 max. Player can obstruct each other if they
+* One player vs. computer or two player modes. Levels range from 1 to 50 max. Players can obstruct each other if they
   want.
 
-* All graphics and the snakes are character based. Use some custom characters that are patched in after copying the
-  character ROM to RAM \$3800. Screen RAM stays at \$0400. Character and color RAM also function as level map and game
+* All graphics (except for events) and the snakes are character based. Use some custom characters that are patched in
+  after copying the character ROM to RAM \$3800. Screen RAM stays at \$0400. Character and color RAM also function as level map and game
   state.
 
 * Snakes are implemented as ring buffers.
 
-* Events are sprite-bases (max 8). We have a scorpion (enemy), heart (reward), barrel (toxin, tactical, hazardous trail
-  left
-  behind.)
+* Events are sprite-based (max 8). We have a scorpion (enemy), heart (reward), barrel (toxin, tactical, hazardous trail
+  left behind.)
     * Collision (`event_check_collision`): reads the two character columns `xc`, `xc+1` over rows `yc`, `yc+1` and
-      reports a snake when the character is a snake part and the colour is `S1_COLOR` / `S2_COLOR`.
-      `skip_left` / `skip_right` suppress columns outside the screen. Each column reads `yc` and `yc+1` with two
-      self-modified `lda $ffff,x`, both patched with row `yc`'s address;
-      the second read adds 40 to X instead of a second row-table lookup (the row tables are strict `base + row*40`).
+      reports a snake when the character is a snake part and the colour is `S1_COLOR` / `S2_COLOR`. `skip_left` /
+      `skip_right` suppress columns outside the screen. Each column reads `yc` and `yc+1` with two
+      self-modified `lda $ffff,x`, both patched with row `yc`'s address; the second read adds 40 to X instead of a
+      second row-table lookup (the row tables are strict `base + row*40`).
       Both instructions must be patched.
     * HEART -> food, SCORPION -> punish, BARREL -> trail
 
@@ -53,13 +52,15 @@ image or the prg file.
 
 * A bit of text because it took some thought and time for the 6502. The computer player has no persistent model of the
   map/games. Each decision is based on the current screen contents around the snake head. The decision consists of an
-  immediate collision/food test followed by a score for every available direction (up, right, down, left). The direction opposite
+  immediate collision/food test followed by a score for every available direction (up, right, down, left). The direction
+  opposite
   to the current heading is always marked as blocked because the snake cannot reverse by 180 degrees.
     * For each of the other directions, the cell immediately next to the head is classified as follows: `TILE_FOOD` ->
       **forced**, `TILE_EMPTY` -> **available**, anything else (borders, hazard, snake, etc.) -> **blocked**
     * If food is found immediately next to the snake, the computer takes it immediately.
     * If no direction is available, i.e. head is blocked/locked-in, the old heading is kept. The next `snake_advance()`
-      will attempt the current direction; if it is still blocked, the normal stuck/punishment mechanism handles that situation.
+      will attempt the current direction; if it is still blocked, the normal stuck/punishment mechanism handles that
+      situation.
     * Without forced moves and with available direction -> evaluation of each available direction:
         * Straight-line look-ahead: measures how far it can continue in a straight line (max 6). To favor directions
           that lead into a longer open corridor.
@@ -70,18 +71,18 @@ image or the prg file.
           food, hazard (anything but empty or food). Food and hazards are weighted according to position (decreases with
           distance to head, max 6 = head).
             * Performance-oriented implementation in `snake_computer_explore()`. Results are stored in the global
-              variables. The critical scan itself is written in 6502 assembly language. Before the scan begins, it looks up
-              the address of screen row `cy` through `scr_row_low[]` and `scr_row_high[]` and patches the code (LDA
-              \$XXXX,X). `X`  is then initialized with the leftmost column `cx`. All position in the 5x3/3x5 area are then scanned
-              by continuously adding offsets to `X`. The offsets are read from `sce_offset[]` (e.g. +1 -> move right one
+              variables. The critical scan itself is written in 6502 assembly language. Before the scan begins, it looks
+              up the address of screen row `cy` through `scr_row_low[]` and `scr_row_high[]` and patches the code (LDA
+              \$XXXX,X). `X`  is then initialized with the leftmost column `cx`. All position in the 5x3/3x5 area are
+              then scanned by continuously adding offsets to `X`. The offsets are read from `sce_offset[]` (e.g. +1 -> move right one
               char, +1 -> once more, +38; next row). The use of an 8-bit `X` index is safe. The largest relative offset
-              reached by the 3x5 scan is 199 (with `cx <= 37`, giving a maximum `X` value of 37 + 4 * 40 + 2 = 199, wrap past 255). `Y` indexes the
-              appropriate 15-entry part of the weight table `sce_weight[]`. The four direction-specific sections of both tables
-              start at indices 0, 15, 30 and 45.
+              reached by the 3x5 scan is 199 (with `cx <= 37`, giving a maximum `X` value of 37 + 4 * 40 + 2 = 199, wrap
+              past 255). `Y` indexes the appropriate 15-entry part of the weight table `sce_weight[]`. The four direction-specific sections of both
+              tables start at indices 0, 15, 30 and 45.
         * The final score is a combination of empty cells ahead, and, in the 5x3/3x5 area ahead, empty, food and
           hazard with a bit of randomness and "stickiness". The random value prevents completely deterministic movement.
-          The stickiness bonus discourages unnecessary zig-zagging. The available direction with the highest score becomes
-          the new heading.
+          The stickiness bonus discourages unnecessary zig-zagging. The available direction with the highest score
+          becomes the new heading.
 
 * Sprites are from \$0C00 to \$1000, which is enough space for 16 sprites.
 
