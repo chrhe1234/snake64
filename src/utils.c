@@ -29,16 +29,18 @@ static uint16_t rng_state = 0;
 
 void rng_init(void) {
 	__asm {
-		lda		$dc04			// CIA1 timer A low
+		lda		$dc04			// CIA1 timer A -> low byte
 		sta		rng_state
-		lda		$d012			// VIC raster line, low byte
+		lda		$d012			// VIC raster line -> high byte
 		sta		rng_state+1
 	}
 }
 
 uint8_t rng_next(void) {
 	__asm {
-		// 16 bit counter
+		lda		#0
+		sta		accu+1
+
 		lda		rng_state			// add $359d to rng_state
 		clc
 		adc		#$9d
@@ -47,7 +49,7 @@ uint8_t rng_next(void) {
 		adc		#$35
 		sta		rng_state+1
 
-		eor		rng_state
+		eor		rng_state			// scramble ...
 		sta		accu
 		asl
 		asl

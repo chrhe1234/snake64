@@ -567,14 +567,6 @@ void snake_control(uint8_t s) {
 #define SDIR_STICKINESS	3
 
 uint8_t snake_dir_available[4];
-int snake_dir_score[4];
-
-uint8_t abs8(int8_t v) {
-	if (v >= 0)
-		return (uint8_t) v;
-	else
-		return (uint8_t) -v;
-}
 
 uint8_t sce_empty, sce_food, sce_hazard;	// number of empty and food tiles found during exploration
 uint8_t sce_i;
@@ -1178,8 +1170,8 @@ void game_hazard_map(const uint8_t config) {
 				for (uint8_t y = 0; y <= 7; y++) {
 					gfx_draw_hazard(8 - 3 + x, 6 - 3 + y);
 					gfx_draw_hazard(8 - 3 + x, 17 - 3 + y);
-					gfx_draw_hazard(31 - 3 + x, 6 - 3 + y);
-					gfx_draw_hazard(31 - 3 + x, 17 - 3 + y);
+					gfx_draw_hazard(30 - 3 + x, 6 - 3 + y);
+					gfx_draw_hazard(30 - 3 + x, 17 - 3 + y);
 				}
 			}
 			break;
@@ -1246,8 +1238,10 @@ void game_loop(void) {
 		level_str[6] = (level / 10) + 48;
 		level_str[7] = (level % 10) + 48;
 		gfx_print_xy(13, 12, C64_WHITE, level_str);
-		for(uint8_t i = 0; i < 50; i++)
+		for(uint8_t i = 0; i < 50; i++) {
 			gfx_wait_frame_end();
+			snd_update();
+		}
 
 		// init snakes
 		snake_init(first_level);
@@ -1290,6 +1284,7 @@ void game_loop(void) {
 
 		update_score = 1;					// update the score at the beginning of each game loop
 
+		stop = 0;
 		while (!stop) {
 			// update score if need, can be late after last end-of-frame wait, bottom part
 			if (update_score) {
@@ -1309,7 +1304,6 @@ void game_loop(void) {
 
 			__asm {							// update background color and reset to black for next frame
 				lda		background_color
-	//			sta     $d020           	// set border color
 				sta     $d021           	// set background color
 				lda		#C64_BLACK
 				sta		background_color
@@ -1368,9 +1362,10 @@ void game_loop(void) {
 				snd_play_timer_tick_n(level_timer1 * 4 + level_timer2);
 				if (level_timer2 == 0) {
 					level_timer2 = 4;
-					if (level_timer1 == 0)
+					if (level_timer1 == 0) {
+						snd_play_final_timer_tick();
 						break;
-					else {
+					} else {
 						level_timer1--;
 					}
 				}
@@ -1382,6 +1377,11 @@ void game_loop(void) {
 			// set stop flag when stop is pressed
 			if (stop_pressed())
 				stop++;
+		}
+		__asm {							// restore background color to black
+			lda		#C64_BLACK
+			sta		background_color
+			sta     $d021           	// set background color
 		}
 		gfx_spr_hide_all();
 		gfx_fade_to_black();
@@ -1400,8 +1400,10 @@ void game_over() {
 	gfx_clr_set(C64_BLACK);
 	gfx_scr_set(32);
 	gfx_print_xy(15, 11, C64_LIGHT_RED, S"GAME OVER");
-	for (uint8_t i = 0; i < 100; i++)
+	for (uint8_t i = 0; i < 150; i++) {
 		gfx_wait_frame_end();
+		snd_update();
+	}
 }
 
 uint8_t game_menu() {
@@ -1438,7 +1440,6 @@ uint8_t game_menu() {
 	gfx_set_xy(37, 22, C64_LIGHT_RED, highscore[2] + 48);
 	gfx_set_xy(38, 22, C64_LIGHT_RED, highscore[1] + 48);
 	gfx_set_xy(39, 22, C64_LIGHT_RED, highscore[0] + 48);
-
 
 	while (1) {
 		gfx_print_xy(2+0, 15, C64_LIGHT_GRAY, S"     CURRENTLY PLAYER VS. ");

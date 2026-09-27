@@ -3,6 +3,8 @@
 
 #include "snake.h"
 #include "gfx.h"
+
+#include "snd.h"
 #include "sprites.h"
 #include "utils.h"
 
@@ -455,42 +457,37 @@ void gfx_wait_frame_end() {
 }
 
 void gfx_fade_to_black() {
-	// gfx_wait_for_key();
-	gfx_wait_frame_end();
+	gfx_wait_frame_end(); snd_update();
 	gfx_clr_set(C64_LIGHT_GRAY);
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	// gfx_wait_for_key();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
 	gfx_clr_set(C64_WHITE);
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	// gfx_wait_for_key();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
 	gfx_clr_set(C64_LIGHT_GRAY);
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	// gfx_wait_for_key();
-	gfx_clr_set(C64_GRAY);
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	// gfx_wait_for_key();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+		gfx_clr_set(C64_GRAY);
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
 	gfx_clr_set(C64_DARK_GRAY);
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	// gfx_wait_for_key();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
 	gfx_clr_set(C64_BLACK);
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	gfx_wait_frame_end();
-	// gfx_wait_for_key();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
+	gfx_wait_frame_end(); snd_update();
 }
 
 #define SPBD	SP_BODY

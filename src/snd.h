@@ -22,6 +22,9 @@ void snd_play_timer_tick();
 // plays timer sound with frequency decreased with increased remaining
 void snd_play_timer_tick_n(uint8_t remaining);
 
+// plays final timer (longer) tick sound
+void snd_play_final_timer_tick();
+
 void snd_play_collision();
 
 void snd_play_eat();

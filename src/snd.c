@@ -77,14 +77,24 @@ const Sound sound_bounce = {
     .duration = 12
 };
 
-// sound for timer blips, frequency will be modified
-Sound sound_blip = {
+// sound for timer tick, frequency will be modified
+Sound sound_timer_tick = {
     .freq     = 0x2000,
     .pwm      = 0x0000,
     .ctrl     = SID_CTRL_TRI,
     .attdec   = 0x02,
     .susrel   = 0x00,
     .duration = 5
+};
+
+// sound for final timer beep
+Sound sound_final_timer_tick = {
+    .freq     = 0x3000,
+    .pwm      = 0x0000,
+    .ctrl     = SID_CTRL_TRI,
+    .attdec   = 0x0F,
+    .susrel   = 0x80,
+    .duration = 25
 };
 
 // maybe useful as a death sound
@@ -116,14 +126,18 @@ void wait_frame(void) {
         ;
 }
 
+void snd_play_final_timer_tick() {
+	snd_play(2, &sound_final_timer_tick);
+}
+
 void snd_play_timer_tick() {
-	sound_blip.freq = 0x2000;
-	snd_play(2, &sound_blip);
+    sound_timer_tick.freq = 0x2000;
+    snd_play(2, &sound_timer_tick);
 }
 
 void snd_play_timer_tick_n(uint8_t remaining) {
-	sound_blip.freq = 0x3000 - ((uint16_t) remaining) * 128;
-	snd_play(2, &sound_blip);
+	sound_timer_tick.freq = 0x3000 - ((uint16_t) remaining) * 128;
+	snd_play(2, &sound_timer_tick);
 }
 
 void snd_play_collision() {
@@ -144,7 +158,7 @@ void snd_play_death() {
 
 void snd_test() {
 	snd_init();
-	snd_play(0, &sound_blip);
+	snd_play(0, &sound_timer_tick);
 	for (uint8_t i = 0; i < 100; i++) {
 		wait_frame();
 		snd_update();
