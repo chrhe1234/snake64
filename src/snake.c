@@ -17,7 +17,7 @@
 // $3800-$4000 charset (not initialized)
 // $4000-$a000 BSS/heap/stack (not initialized)
 
-#pragma region(lower1, 0x0a00, 0x0c00, , , {code, data})
+#pragma region(lower1, 0x0880, 0x0c00, , , {code, data})
 #pragma section(sprites, 0, , , data)
 #pragma region(sprites_region, 0x0c00, 0x1000, , , {sprites})
 #pragma region(lower2, 0x1000, 0x3800, , , {code, data})
@@ -1415,6 +1415,9 @@ void game_over() {
 	}
 }
 
+// snake for the menu
+char snake_str[] = {SP_TAIL2, SP_TAIL1, SP_BODY, SP_BODY, SP_BODY, SP_HEAD, 0};
+
 uint8_t game_menu() {
 	gfx_clr_set(C64_BLACK);
 	gfx_scr_set(32);
@@ -1423,33 +1426,16 @@ uint8_t game_menu() {
 	gfx_print_xy(2, 11, C64_LIGHT_GRAY, S"F1   START GAME");
 	gfx_print_xy(2, 13, C64_LIGHT_GRAY, S"F3   CHANGE MODE");
 	gfx_print_xy(2, 17, C64_LIGHT_GRAY, S"F5   EXIT");
-	gfx_print_xy(0, 20, C64_WHITE, S"LAST SCORES");
-	gfx_set_xy(2+0, 22, S1_COLOR, SP_TAIL2);
-	gfx_set_xy(2+1, 22, S1_COLOR, SP_TAIL1);
-	gfx_set_xy(2+2, 22, S1_COLOR, SP_BODY);
-	gfx_set_xy(2+3, 22, S1_COLOR, SP_BODY);
-	gfx_set_xy(2+4, 22, S1_COLOR, SP_BODY);
-	gfx_set_xy(2+5, 22, S1_COLOR, SP_HEAD);
-	gfx_set_xy(2+0, 24, S2_COLOR, SP_TAIL2);
-	gfx_set_xy(2+1, 24, S2_COLOR, SP_TAIL1);
-	gfx_set_xy(2+2, 24, S2_COLOR, SP_BODY);
-	gfx_set_xy(2+3, 24, S2_COLOR, SP_BODY);
-	gfx_set_xy(2+4, 24, S2_COLOR, SP_BODY);
-	gfx_set_xy(2+5, 24, S2_COLOR, SP_HEAD);
-	gfx_set_xy(14, 22, S1_COLOR, snake1.score[3] + 48);
-	gfx_set_xy(15, 22, S1_COLOR, snake1.score[2] + 48);
-	gfx_set_xy(16, 22, S1_COLOR, snake1.score[1] + 48);
-	gfx_set_xy(17, 22, S1_COLOR, snake1.score[0] + 48);
-	gfx_set_xy(14, 24, S2_COLOR, snake2.score[3] + 48);
-	gfx_set_xy(15, 24, S2_COLOR, snake2.score[2] + 48);
-	gfx_set_xy(16, 24, S2_COLOR, snake2.score[1] + 48);
-	gfx_set_xy(17, 24, S2_COLOR, snake2.score[0] + 48);
-	gfx_print_xy(31, 20, C64_LIGHT_RED, S"HIGHSCORE");
-	gfx_set_xy(36, 22, C64_LIGHT_RED, highscore[3] + 48);
-	gfx_set_xy(37, 22, C64_LIGHT_RED, highscore[2] + 48);
-	gfx_set_xy(38, 22, C64_LIGHT_RED, highscore[1] + 48);
-	gfx_set_xy(39, 22, C64_LIGHT_RED, highscore[0] + 48);
 	gfx_print_xy(28, 10, C64_DARK_GRAY, S"CHRHE (2026)");
+	gfx_print_xy(31, 20, C64_LIGHT_RED, S"HIGHSCORE");
+	gfx_print_xy(0, 20, C64_WHITE, S"LAST SCORES");
+	gfx_print_xy(2, 22, S1_COLOR, snake_str);
+	gfx_print_xy(2, 24, S2_COLOR, snake_str);
+	for (uint8_t i = 0; i < 4; i++) {
+		gfx_set_xy(14 + i, 22, S1_COLOR, snake1.score[3 - i] + 48);
+		gfx_set_xy(14 + i, 24, S2_COLOR, snake2.score[3 - i] + 48);
+		gfx_set_xy(36 + i, 22, C64_LIGHT_RED, highscore[3 - i] + 48);
+	}
 
 	while (1) {
 		gfx_print_xy(2+0, 15, C64_LIGHT_GRAY, S"     CURRENTLY PLAYER VS. ");

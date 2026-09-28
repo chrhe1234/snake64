@@ -35,6 +35,9 @@ Ingame:
 
 * Flush keyboard buffer before `wait_for_key` in `game_menu`?
 
+* Some memory could be saved by cutting down memory for sprites to 12 x 64. Only 12 sprites are used. There is also a
+  lot of duplicated code in event_processing () that could be simplified/trimmed in a final version.
+
 ## Design notes
 
 * One player vs. computer or two player modes. Level ranges from 1 to 50 max. Players can obstruct each other if they
@@ -106,6 +109,8 @@ Ingame:
 
 ## Done
 
+* Optimized memory footprint and reduced file size by ~ 10 %.
+
 * Fixed an error with input processing (diagonals on real joystick, snake reversing into itself, etc.).
 
 * Time sound blip is now lightly longer higher tone that signals the end of the level.
@@ -125,9 +130,8 @@ Ingame:
 
 * Fixed: A lot of hits are still missed using the current single point check.
 
-* Done: Create obstacle layouts/levels with progressively more difficult navigation. Decide how hazards are incorporated
-  into
-  level design. Corridors could be added. Maybe also 8 or more L-type shapes.
+* Done: Create obstacle layouts/levels with progressively more difficult navigation. Decide how hazards are
+  incorporated into level design. Corridors could be added. Maybe also 8 or more L-type shapes.
 
 * Done: Add another event (e.g. poisonous barrel) that makes the snake leave behind a hazardous trail for a few steps.
   Both in the same color as the hazards.
