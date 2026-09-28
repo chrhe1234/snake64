@@ -1,5 +1,4 @@
 archive/*
-.claude/*
 .*
 !.gitignore
 snake64.*

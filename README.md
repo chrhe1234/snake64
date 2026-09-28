@@ -2,7 +2,7 @@
 
 ## About
 
-This is a variant of the well-known snake game for the C64 for one player and a computer player or two players. It's my 
+This is a variant of the well-known snake game for the C64 for one player and a computer player or two players. It's my
 first attempt at a more complete program and game for the C64.
 
 The player controls a snake that is constantly moving and needs to avoid obstacles (e.g. objects, the other snake,
@@ -18,7 +18,18 @@ That's all there is to it for now.
 
 The game is written mostly in C and some assembly language and can be compiled with Oscar64
 (https://github.com/drmortalwombat/oscar64). You can use the included build script in Linux. Or simply use/run the disk
-image or the prg file. It runs fine in VICE (https://vice-emu.sourceforge.io/). 
+image or the prg file. It runs fine in VICE (https://vice-emu.sourceforge.io/) and the Commodore 64
+Ultimate (https://commodore.net/store/commodore64/).
+
+## Screenshots
+
+Title screen:
+
+<img src="screenshots/title.png"><br>
+
+Ingame:
+
+<img src="screenshots/ingame.png"><br>
 
 ## To-Do
 
@@ -33,13 +44,14 @@ image or the prg file. It runs fine in VICE (https://vice-emu.sourceforge.io/).
   after copying the character ROM to RAM \$3800. Screen RAM stays at \$0400. Character and color RAM also function as
   level map and game state.
 
-* Snakes are implemented as ring buffers. Each snake has a heading (up, right, down, left). The maximum length is 240. If
-  the snake hits an obstacle/hazard/frame/other snake/itself for too long and cannot move, it takes damages and shrinks.
-  At same stage it will die. Both snakes dead = game over. 
+* Snakes are implemented as ring buffers. Each snake has a heading (up, right, down, left). The maximum length is 240.
+  If the snake hits an obstacle/hazard/frame/other snake/itself for too long and cannot move, it takes damages and 
+  shrinks. At same stage it will die. Both snakes dead = game over.
 
 * Events are sprite-based (max 8). We have a scorpion (enemy), heart (reward), barrel (toxin, tactical, hazardous trail
   left behind.)
-    * Collision (`event_check_collision`): reads the two character columns `xc`, `xc+1` over rows `yc`, `yc+1` (four chars
+    * Collision (`event_check_collision`): reads the two character columns `xc`, `xc+1` over rows `yc`, `yc+1` (four
+      chars
       under the sprite) and reports if and which snake is under the sprite (`S1_COLOR`/`S2_COLOR`). `skip_left` /
       `skip_right` suppress columns outside the screen. Each column reads `yc` and `yc+1` with two
       self-modified `lda $ffff,x`, both patched with row `yc`'s address; the second read adds 40 to X instead of a
@@ -51,7 +63,8 @@ image or the prg file. It runs fine in VICE (https://vice-emu.sourceforge.io/).
   and despawn after a certain time.
 
 * Computer player: A bit of text because it took some thought and time for the 6502. The computer player decides on
-  a new heading based on the current screen contents around the snake head in a given interval. The decision consists of an
+  a new heading based on the current screen contents around the snake head in a given interval. The decision consists of
+  an
   immediate collision/food test followed by scoring available directions (up, right, down, left). The direction
   opposite to the current is always marked as blocked because the snake cannot reverse by 180 degrees.
     * For each of the other directions, the cell immediately next to the head is classified as follows: `TILE_FOOD` ->
@@ -73,11 +86,12 @@ image or the prg file. It runs fine in VICE (https://vice-emu.sourceforge.io/).
               variables. The scan is written in 6502 assembly language. Before the scan begins, it looks
               up the address of screen row `cy` through `scr_row_low[]` and `scr_row_high[]` and patches the code (LDA
               \$XXXX,X). `X`  is then initialized with the leftmost column `cx`. All position in the 5x3/3x5 area are
-              then scanned by continuously adding offsets to `X`. The offsets are read from `sce_offset[]` (e.g. +1 -> move right one
-              char, +1 -> once more, +38; next row). The use of an 8-bit `X` index is safe because the largest relative offset
-              reached by the 3x5 scan is 199 (`cx <= 37` -> maximum `X` value = 37 + 4 * 40 + 2 = 199 -> no wrap
-              past 255). `Y` indexes the appropriate 15-entry part of the weight table `sce_weight[]`. The four direction-specific sections of both
-              tables start at indices 0, 15, 30 and 45.
+              then scanned by continuously adding offsets to `X`. The offsets are read from `sce_offset[]` (e.g. +1 ->
+              move right one char, +1 -> once more, +38; next row). The use of an 8-bit `X` index is safe because the
+              largest relative
+              offset reached by the 3x5 scan is 199 (`cx <= 37` -> maximum `X` value = 37 + 4 * 40 + 2 = 199 -> no wrap
+              past 255). `Y` indexes the appropriate 15-entry part of the weight table `sce_weight[]`. The four
+              direction-specific sections of both tables start at indices 0, 15, 30 and 45.
         * The final score is a combination of empty cells ahead, and, in the 5x3/3x5 area ahead, empty, food and
           hazard with a bit of randomness and "stickiness". The random value prevents completely deterministic movement.
           The stickiness bonus discourages unnecessary zig-zagging. The available direction with the highest score
@@ -85,17 +99,20 @@ image or the prg file. It runs fine in VICE (https://vice-emu.sourceforge.io/).
 
 * Sprites are from \$0C00 to \$1000, which is enough space for 16 sprites.
 
-* Sound: Trivial sounds and sound routines only. No music. Configure a channel/voice, enable it, wait a set number of frames, disable it.
+* Sound: Trivial sounds and sound routines only. No music. Configure a channel/voice, enable it, wait a set number of
+  frames, disable it.
 
 * Using `%` where absolutely needed is ok because Oscar64's `divmod` is efficient and timeing is predictable.
 
 ## Done
 
+* Fixed an error with input processing (diagonals on real joystick, snake reversing into itself, etc.).
+
 * Time sound blip is now lightly longer higher tone that signals the end of the level.
 
 * Event spawning is now controlled by settings and level-dependent.
 
-* Introduced CIA access by sei/cli so they cannot be interrupted.
+* Introduced sei/cli around CIA accesses so they cannot be interrupted.
 
 * Highscore tracking is done. Not saved to disk for the time being.
 

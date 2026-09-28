@@ -28,6 +28,7 @@ typedef struct {
     uint8_t	stuck;					// number of consecutive blocked advance attempts
     int8_t score[4];				// score in individual digits, int (!), no uint
     uint8_t trail;                  // number of rounds the snake leaves a hazardous trail behind
+    uint8_t moved;                  // direction of the last executed step (input is checked against it)
 } Snake;
 
 #define SNAKE_SCORE_OFF 519         // offset of score array in Snake struct

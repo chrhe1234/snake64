@@ -76,6 +76,7 @@ void snake_reset(uint8_t s, uint8_t reset_score) {
 	if (s == 1) {
 		snake1.status = 0;
 		snake1.direction = SDIR_RIGHT;
+		snake1.moved = SDIR_RIGHT;
 		snake1.start = 0;
 		snake1.end = 0;
 		snake1.length = 0;
@@ -99,6 +100,7 @@ void snake_reset(uint8_t s, uint8_t reset_score) {
 	if (s == 2) {
 		snake2.status = 0;
 		snake2.direction = SDIR_RIGHT;
+		snake2.moved = SDIR_RIGHT;
 		snake2.start = 0;
 		snake2.end = 0;
 		snake2.length = 0;
@@ -423,6 +425,7 @@ void snake_advance(uint8_t s) {
 		}
 		// move forward
 		snake1.stuck = 0;
+		snake1.moved = snake1.direction;
 		snake1.start++;
 		snake1.x[snake1.start] = nx;
 		snake1.y[snake1.start] = ny;
@@ -464,6 +467,7 @@ void snake_advance(uint8_t s) {
 		}
 		// move forward
 		snake2.stuck = 0;
+		snake2.moved = snake2.direction;
 		snake2.start++;
 		snake2.x[snake2.start] = nx;
 		snake2.y[snake2.start] = ny;
@@ -488,6 +492,7 @@ void snake_init(uint8_t reset_score) {
 	snake_reset(1, reset_score);
 	snake1.status = SNAKE_ACTIVE;
 	snake1.direction = SDIR_LEFT;
+	snake1.moved = SDIR_LEFT;
 	snake_add(1, 18, 11);
 	snake_add(1, 17, 11);
 	snake_add(1, 16, 11);
@@ -497,6 +502,7 @@ void snake_init(uint8_t reset_score) {
 	snake_reset(2, reset_score);
 	snake2.status = SNAKE_ACTIVE;
 	snake2.direction = SDIR_RIGHT;
+	snake2.moved = SDIR_RIGHT;
 	snake_add(2, 22, 11);
 	snake_add(2, 23, 11);
 	snake_add(2, 24, 11);
@@ -523,37 +529,39 @@ uint8_t stop_pressed() {
 #define JOY_RIGHT   0x08
 #define JOY_FIRE    0x10
 
+// lookup table for calculating next direction based on last move
+// joystick bits after inversion -> movement direction, 0xff = no or invalid input
+// index [moved & 1][joy & 0x0f], a diagonal is resolved to the turn (perpendicular to the last step):
+// row 0 moving vertically -> horizontal part, row 1 moving horizontally -> vertical part
+const uint8_t JOY_TURN[2][16] = {
+	//	    -   U     D     UD    L    UL    DL     -     R     UR    DR     -     -     -     -     -
+	{ 0xff,  0,    2,  0xff,   3,    3,    3, 0xff,    1,     1,    1, 0xff, 0xff, 0xff, 0xff, 0xff },
+	{ 0xff,  0,    2,  0xff,   3,    0,    2, 0xff,    1,     0,    2, 0xff, 0xff, 0xff, 0xff, 0xff }
+};
+
+// read joystick, the new direction is checked against the last executed step (moved), not the pending one,
+// so neither a diagonal nor two turns within one advance period can reverse the snake (opposite = d ^ 2)
 void snake_control(uint8_t s) {
 	if (s == 1) {
-		__asm { sei }
 		uint8_t joy = ~cia1.pra;		// joystick 2
-		if ((joy & JOY_LEFT) && snake1.direction != SDIR_RIGHT)
-			snake1.direction = SDIR_LEFT;
-		if ((joy & JOY_RIGHT) && snake1.direction != SDIR_LEFT)
-			snake1.direction = SDIR_RIGHT;
-		if ((joy & JOY_UP) && snake1.direction != SDIR_DOWN)
-			snake1.direction = SDIR_UP;
-		if ((joy & JOY_DOWN) && snake1.direction != SDIR_UP)
-			snake1.direction = SDIR_DOWN;
+		uint8_t d = JOY_TURN[snake1.moved & 1][joy & 0x0f];
+		if (d != 0xff && d != (snake1.moved ^ 2))		// ^2 reverses direction U0 -> D2, R1 -> L3, ...
+			snake1.direction = d;
 //		if (!(joy & JOY_FIRE))
 //			fire();
-		__asm { cli }
 		return;
 	}
 	if (s == 2) {
 		__asm { sei }
+		cia1.pra = 0xff;				// deselect all keyboard columns, otherwise keys in column 7 act as joystick 1
 		uint8_t joy = ~cia1.prb;		// joystick 1
-		if ((joy & JOY_LEFT) && snake2.direction != SDIR_RIGHT)
-			snake2.direction = SDIR_LEFT;
-		if ((joy & JOY_RIGHT) && snake2.direction != SDIR_LEFT)
-			snake2.direction = SDIR_RIGHT;
-		if ((joy & JOY_UP) && snake2.direction != SDIR_DOWN)
-			snake2.direction = SDIR_UP;
-		if ((joy & JOY_DOWN) && snake2.direction != SDIR_UP)
-			snake2.direction = SDIR_DOWN;
+		cia1.pra = 0x7f;				// restore the value the KERNAL keyboard scan leaves
+		__asm { cli }
+		uint8_t d = JOY_TURN[snake2.moved & 1][joy & 0x0f];
+		if (d != 0xff && d != (snake2.moved ^ 2))		// ^2 reverses direction U0 -> D2, R1 -> L3, ...
+			snake2.direction = d;
 //		if (!(joy & JOY_FIRE))
 //			fire();
-		__asm { cli }
 		return;
 	}
 }
@@ -1219,7 +1227,7 @@ uint8_t EVENT_SPAWN_BARREL_LVL[10] =	{ 20, 25, 30, 35, 40, 45, 40, 30, 20, 15};
 #define PLAYER_VS_PLAYER	0		// p v p
 #define PLAYER_VS_COMPUTER	1		// p v e
 
-uint8_t game_mode = PLAYER_VS_PLAYER;
+uint8_t game_mode = PLAYER_VS_COMPUTER;
 
 const uint8_t level_timer_char[] = {32, 101, 97, 234, 224};
 
