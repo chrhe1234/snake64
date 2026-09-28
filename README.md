@@ -33,7 +33,7 @@ image or the prg file.
   after copying the character ROM to RAM \$3800. Screen RAM stays at \$0400. Character and color RAM also function as level map and game
   state.
 
-* Snakes are implemented as ring buffers.
+* Snakes are implemented as ring buffers. Each snake has a heading. The maximum length is 240.
 
 * Events are sprite-based (max 8). We have a scorpion (enemy), heart (reward), barrel (toxin, tactical, hazardous trail
   left behind.)
@@ -50,11 +50,10 @@ image or the prg file.
   random tries at `1 + % 38`, `1 + % 22`; active slots age and despawn after `FOOD_DURATION + % FOOD_DURATION`
   checks (`FOOD_DURATION` = 16).
 
-* A bit of text because it took some thought and time for the 6502. The computer player has no persistent model of the
-  map/games. Each decision is based on the current screen contents around the snake head. The decision consists of an
+* A bit of text because it took some thought and time for the 6502. Each time the computer player runs it deciodes on
+  a new heading based on the current screen contents around the snake head. The decision consists of an
   immediate collision/food test followed by a score for every available direction (up, right, down, left). The direction
-  opposite
-  to the current heading is always marked as blocked because the snake cannot reverse by 180 degrees.
+  opposite to the current is always marked as blocked because the snake cannot reverse by 180 degrees.
     * For each of the other directions, the cell immediately next to the head is classified as follows: `TILE_FOOD` ->
       **forced**, `TILE_EMPTY` -> **available**, anything else (borders, hazard, snake, etc.) -> **blocked**
     * If food is found immediately next to the snake, the computer takes it immediately.

@@ -585,6 +585,7 @@ const uint8_t sce_weight[60] = {
 	+2, +3, +4,		+3, +4, +5,		+4, +5, +6,		+3, +4, +5,		+2, +3, +4, 		// weights for the position when heading left
 };
 
+// evaluate the vicinity of the snake head
 void snake_computer_explore(uint8_t cx, uint8_t cy, uint8_t sce_offset_ndx) {
 	__asm {
 		ldy     cy					// put top (left) screen row address into load instruction
@@ -1440,6 +1441,7 @@ uint8_t game_menu() {
 	gfx_set_xy(37, 22, C64_LIGHT_RED, highscore[2] + 48);
 	gfx_set_xy(38, 22, C64_LIGHT_RED, highscore[1] + 48);
 	gfx_set_xy(39, 22, C64_LIGHT_RED, highscore[0] + 48);
+	gfx_print_xy(28, 10, C64_DARK_GRAY, S"CHRHE (2026)");
 
 	while (1) {
 		gfx_print_xy(2+0, 15, C64_LIGHT_GRAY, S"     CURRENTLY PLAYER VS. ");
