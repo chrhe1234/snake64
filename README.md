@@ -33,11 +33,14 @@ Ingame:
 
 ## To-Do
 
-* Add an "hourglass" event that increases the remaining time as a tactical device. It allows more food collection and growth
+* Add an "hourglass" event that increases the remaining time as a tactical device? It could allow more food collection and growth
   and thereby also can make the remaining level more difficult. If one player is already dead, the other one pull ahead in
-  points.
+  points. But this is visually not easy to decipher and the benefit may be unclear... The alternative is a "key" that, when collected,
+  opens up barriers. Those barriers should not close off entire sections of the arena but complicate navigation at higher levels. 
+  Requires a bit more work during level setup but it's easy to understand visually and matches the general path-seeking logic of the
+  games.
 
-* There should be a clear statement who's won on the game over screen.
+* There should be a clear statement who's won on the "game over" screen.
 
 * The highscore could be expanded to a list of three (because that fits on the screen), which should be loaded when
   the game starts and saved whenever it changes. Not sure if we need initials for that.
@@ -46,7 +49,7 @@ Ingame:
 
 * Flush keyboard buffer before `wait_for_key` in `game_menu`?
 
-* Some memory could be saved by cutting down memory for sprites to 12 x 64. Only 12 sprites are used. There is also a
+* Some memory could be saved by cutting down memory for sprites to 12x64 (only 12 sprites are used). There is also a
   lot of duplicated code in event_processing () that could be simplified/trimmed in a final version.
 
 ## Design notes
