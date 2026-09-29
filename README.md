@@ -33,6 +33,12 @@ Ingame:
 
 ## To-Do
 
+* Add an "hourglass" event that increases the remaining time as a tactical device. It allows more food collection and growth
+  and thereby also can make the remaining level more difficult. If one player is already dead, the other one pull ahead in
+  points.
+
+* There should be a clear statement who's won on the game over screen.
+
 * The highscore could be expanded to a list of three (because that fits on the screen), which should be loaded when
   the game starts and saved whenever it changes. Not sure if we need initials for that.
 
