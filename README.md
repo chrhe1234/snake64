@@ -33,6 +33,11 @@ Ingame:
 
 ## To-Do
 
+* The highscore could be expanded to a list of three (because that fits on the screen), which should be loaded when
+  the game starts and saved whenever it changes. Not sure if we need initials for that.
+
+* The "heart" event currently only gives points but does not increase snake length. This needs to be fixed.
+
 * Flush keyboard buffer before `wait_for_key` in `game_menu`?
 
 * Some memory could be saved by cutting down memory for sprites to 12 x 64. Only 12 sprites are used. There is also a
