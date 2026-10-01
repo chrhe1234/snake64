@@ -33,6 +33,8 @@ Ingame:
 
 ## To-Do
 
+* Persistent highscores, possibly with names, would be nice. 
+
 * Flush keyboard buffer before `wait_for_key` in `game_menu`?
 
 * Some memory could be saved by cutting down memory for sprites to 12 x 64. Only 12 sprites are used. There is also a
