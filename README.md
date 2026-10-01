@@ -33,12 +33,20 @@ Ingame:
 
 ## To-Do
 
-* Persistent highscores, possibly with names, would be nice. 
+* Add an "hourglass" event that increases the remaining time as a tactical device? It could allow more food collection
+  and growth and thereby also can make the remaining level more difficult. If one player is already dead, the other one
+  pull ahead in points. But this is visually not easy to decipher and the benefit may be unclear... The alternative is a
+  "key" that, when collected, opens up barriers. Those barriers should not close off entire sections of the arena but
+  complicate navigation at higher levels. Requires a bit more work during level setup but it's easy to understand visually and
+  matches the general path-seeking logic of the games.
+
+* The highscore could be expanded to a list of three (because that fits on the screen), which should be loaded when
+  the game starts and saved whenever it changes. Not sure if we need initials for that.
 
 * Flush keyboard buffer before `wait_for_key` in `game_menu`?
 
 * Some memory could be saved by cutting down memory for sprites to 12 x 64. Only 12 sprites are used. There is also a
-  lot of duplicated code in event_processing () that could be simplified/trimmed in a final version.
+  lot of duplicated code in `event_processing()` that could be simplified/trimmed in a final version.
 
 ## Design notes
 
@@ -61,7 +69,7 @@ Ingame:
       `skip_right` suppress columns outside the screen. Each column reads `yc` and `yc+1` with two
       self-modified `lda $ffff,x`, both patched with row `yc`'s address; the second read adds 40 to X instead of a
       second row-table lookup (the row tables are strict `base + row*40`). Both instructions must be patched.
-    * HEART -> food, SCORPION -> punish, BARREL -> trail
+    * `HEART` -> food, `SCORPION` -> punish, `BARREL` -> trail
 
 * Food spawning/`food_check()` (every `FOOD_TICKS` = 50 frames, only in frames without advance, computer move or spawn):
   only the first inactive slot gets the spawn search per call with `FOOD_SPAWN_TRIES` = 5 random tries. Active slots age
@@ -110,6 +118,10 @@ Ingame:
 * Using `%` where absolutely needed is ok because Oscar64's `divmod` is efficient and timeing is predictable.
 
 ## Done
+
+* The score is now display again on the "game over" screen.
+
+* The `HEART` no grows the tail by 4 pieces.
 
 * Optimized memory footprint and reduced file size by ~ 10 %.
 

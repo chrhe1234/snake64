@@ -1036,12 +1036,14 @@ void event_process() {
 						// check collision with snake -> consume and disable event
 						uint8_t collision = event_check_collision(event[i].xpos, event[i].ypos);
 						if (collision == 1) {
+							snake1.grow = 4;
 							snake_inc_score(1, 5);
 							update_score = 1;
 							snd_play_eat();
 							event[i].active = 0;
 						}
 						if (collision == 2) {
+							snake2.grow = 4;
 							snake_inc_score(2, 5);
 							update_score = 1;
 							snd_play_eat();
@@ -1405,18 +1407,24 @@ void game_loop(void) {
 	}
 }
 
+// snake for the menu and game over screen
+char snake_str[] = {SP_TAIL2, SP_TAIL1, SP_BODY, SP_BODY, SP_BODY, SP_HEAD, 0};
+
 void game_over() {
 	gfx_clr_set(C64_BLACK);
 	gfx_scr_set(32);
 	gfx_print_xy(15, 11, C64_LIGHT_RED, S"GAME OVER");
+	gfx_print_xy(13, 14, S1_COLOR, snake_str);
+	gfx_print_xy(13, 16, S2_COLOR, snake_str);
+	for (uint8_t i = 0; i < 4; i++) {
+		gfx_set_xy(20 + i, 14, S1_COLOR, snake1.score[3 - i] + 48);
+		gfx_set_xy(20 + i, 16, S2_COLOR, snake2.score[3 - i] + 48);
+	}
 	for (uint8_t i = 0; i < 150; i++) {
 		gfx_wait_frame_end();
 		snd_update();
 	}
 }
-
-// snake for the menu
-char snake_str[] = {SP_TAIL2, SP_TAIL1, SP_BODY, SP_BODY, SP_BODY, SP_HEAD, 0};
 
 uint8_t game_menu() {
 	gfx_clr_set(C64_BLACK);
