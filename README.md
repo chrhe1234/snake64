@@ -37,8 +37,12 @@ Ingame:
   and growth and thereby also can make the remaining level more difficult. If one player is already dead, the other one
   pull ahead in points. But this is visually not easy to decipher and the benefit may be unclear... The alternative is a
   "key" that, when collected, opens up barriers. Those barriers should not close off entire sections of the arena but
-  complicate navigation at higher levels. Requires a bit more work during level setup but it's easy to understand visually and
-  matches the general path-seeking logic of the games.
+  complicate navigation at higher levels. Requires a bit more work during level setup, but it's easy to understand visually and
+  matches the general path-seeking logic of the games. ... Complete removable obstacles for further levels.
+
+* The game is way too fast at the beginning. Slow down all movement by a factor of 4 for levels 1-5 and 2 for levels 6-10.
+
+* Correct erratic movements. Indicate snake heading.
 
 * The highscore could be expanded to a list of three (because that fits on the screen), which should be loaded when
   the game starts and saved whenever it changes. Not sure if we need initials for that.

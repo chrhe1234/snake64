@@ -846,6 +846,73 @@ void food_check() {
 	}
 }
 
+// ############################################################### hazards/obstacles
+
+#define HAZARD_FIXED		0		// permanent hazard
+#define HAZARD_REMOVABLE	1		// removable by a 'key' event
+
+typedef struct {
+	uint8_t map;		// map type (0..4) this hazard belongs to
+	uint8_t kind;		// HAZARD_FIXED or HAZARD_REMOVABLE
+	uint8_t x;			// top left x and y
+	uint8_t y;
+	uint8_t w;			// width and height (a bar is w x 1 or 1 x h)
+	uint8_t h;
+} Hazard;
+
+// all hazards of all map types, game_hazard_map picks the rows of the current map type, rows can be added in any order, max. REM_HAZARDS_MAX locked hazards per map type
+const Hazard hazard[] = {
+	// map type 0: two removable bars
+	{ 0, HAZARD_REMOVABLE,  5,  5, 30,  1 },
+	{ 0, HAZARD_REMOVABLE,  5, 16, 30,  1 },
+	// map type 1: four horizontal bars, two removable bars in between
+	{ 1, HAZARD_FIXED,      5,  5, 11,  1 },
+	{ 1, HAZARD_FIXED,     24,  5, 11,  1 },
+	{ 1, HAZARD_FIXED,      5, 16, 11,  1 },
+	{ 1, HAZARD_FIXED,     24, 16, 11,  1 },
+	{ 1, HAZARD_REMOVABLE, 16,  5,  8,  1 },
+	{ 1, HAZARD_REMOVABLE, 16, 16,  8,  1 },
+	// map type 2: four crosses
+	{ 2, HAZARD_FIXED,      5,  5,  8,  1 },
+	{ 2, HAZARD_FIXED,      5, 18,  8,  1 },
+	{ 2, HAZARD_FIXED,     27,  5,  8,  1 },
+	{ 2, HAZARD_FIXED,     27, 18,  8,  1 },
+	{ 2, HAZARD_FIXED,      8,  3,  1,  7 },
+	{ 2, HAZARD_FIXED,     31,  3,  1,  7 },
+	{ 2, HAZARD_FIXED,      8, 14,  1,  7 },
+	{ 2, HAZARD_FIXED,     31, 14,  1,  7 },
+	// map type 3: four blocks
+	{ 3, HAZARD_FIXED,      5,  3,  8,  8 },
+	{ 3, HAZARD_FIXED,      5, 14,  8,  8 },
+	{ 3, HAZARD_FIXED,     27,  3,  8,  8 },
+	{ 3, HAZARD_FIXED,     27, 14,  8,  8 },
+	// map type 4: four L-like obstacles and four bars with a hook
+	{ 4, HAZARD_FIXED,      3,  3, 11,  1 },
+	{ 4, HAZARD_FIXED,      6,  9, 11,  1 },
+	{ 4, HAZARD_FIXED,      6, 14, 11,  1 },
+	{ 4, HAZARD_FIXED,      3, 19, 11,  1 },
+	{ 4, HAZARD_FIXED,     26,  3, 11,  1 },
+	{ 4, HAZARD_FIXED,     23,  9, 11,  1 },
+	{ 4, HAZARD_FIXED,     23, 14, 11,  1 },
+	{ 4, HAZARD_FIXED,     26, 19, 11,  1 },
+	{ 4, HAZARD_FIXED,      3,  3,  1,  4 },
+	{ 4, HAZARD_FIXED,     36,  3,  1,  4 },
+	{ 4, HAZARD_FIXED,      3, 16,  1,  4 },
+	{ 4, HAZARD_FIXED,     36, 16,  1,  4 },
+	{ 4, HAZARD_FIXED,     16,  6,  1,  4 },
+	{ 4, HAZARD_FIXED,     23,  6,  1,  4 },
+	{ 4, HAZARD_FIXED,     16, 14,  1,  4 },
+	{ 4, HAZARD_FIXED,     23, 14,  1,  4 }
+};
+
+#define HAZARD_N	((uint8_t) (sizeof(hazard) / sizeof(hazard[0])))
+
+void game_draw_hazard(const uint8_t ndx, const uint8_t chr);	// declaration
+
+#define REM_HAZARDS_MAX		8
+#define REM_HAZARDS_NONE	0xff
+uint8_t rem_hazard[REM_HAZARDS_MAX];		// removable hazards (index into hazard[]) of the current level, == REM_HAZARDS_NONE -> invalid
+
 // ############################################################### events
 
 #define EVENT_N	SPR_N		// = number of simultaneous sprites
@@ -853,7 +920,8 @@ void food_check() {
 enum EventType {
 	HEART,
 	SCORPION,
-	BARREL
+	BARREL,
+	KEY
 };
 
 typedef struct {
@@ -883,10 +951,11 @@ void event_add(enum EventType t) {
 			return;
 	}
 	switch (t) {
-		// spawning behaviour is the same for all three events
+		// spawning behaviour is the same for all four events
 		case HEART:
 		case SCORPION:
 		case BARREL:
+		case KEY:
 			event[ndx].active = 1;
 			event[ndx].type = t;
 			row = (rng_next() % 22) + 1;
@@ -1005,36 +1074,41 @@ uint8_t event_check_collision(uint16_t x, uint8_t y) {
 	return 0;
 }
 
-const uint8_t heart_animate[] = {3, 4, 5, 4, 3};
-const uint8_t scorpion_animate[] = {0, 1, 2, 1, 0};
-const uint8_t scorpion_animate_flipped[] = {6, 7, 8, 7, 6};
-const uint8_t barrel_animate[] = {9, 10, 11, 11, 9};
+// sprite animations (i.e. sequence of sprites cycled through for an event, must be 5)
+const uint8_t heart_animate[5] = {3, 4, 5, 4, 3};
+const uint8_t scorpion_animate[5] = {0, 1, 2, 1, 0};
+const uint8_t scorpion_animate_flipped[5] = {6, 7, 8, 7, 6};
+const uint8_t barrel_animate[5] = {9, 10, 11, 11, 9};
+const uint8_t key_animate[5] = {14, 13, 12, 13, 14};
 
 // process all events including display updates, call once per frame
 void event_process() {
 	for (uint8_t i = 0; i < EVENT_N; i++) {
 		if (event[i].active) {
-			switch (event[i].type) {
-				case HEART:
-					if (event[i].xdir) {
-						event[i].xpos++;
-						if (event[i].xpos > (SPR_OFFSET_X + 320 - 8))
-							event[i].active = 0;
-					} else {
-						event[i].xpos--;
-						if (event[i].xpos < (SPR_OFFSET_X - 16))
-							event[i].active = 0;
-					}
-					if (event[i].active) {
-						event[i].animate_counter++;
-						if (event[i].animate_counter >= 3) {
-							event[i].animate_counter = 0;
-							event[i].animate_state++;
-							if (event[i].animate_state >= 5)
-								event[i].animate_state = 0;
-						}
-						// check collision with snake -> consume and disable event
-						uint8_t collision = event_check_collision(event[i].xpos, event[i].ypos);
+			// update animation counter
+			event[i].animate_counter++;
+			if (event[i].animate_counter >= 3) {
+				event[i].animate_counter = 0;
+				event[i].animate_state++;
+				if (event[i].animate_state >= 5)
+					event[i].animate_state = 0;
+			}
+			// movement
+			if (event[i].xdir) {
+				event[i].xpos++;
+				if (event[i].xpos > (SPR_OFFSET_X + 320 - 8))
+					event[i].active = 0;
+			} else {
+				event[i].xpos--;
+				if (event[i].xpos < (SPR_OFFSET_X - 16))
+					event[i].active = 0;
+			}
+			if (event[i].active) {
+				// handle individual events if the event is still active
+				// check collision with snake -> consume and disable event
+				uint8_t collision = event_check_collision(event[i].xpos, event[i].ypos);
+				switch (event[i].type) {
+					case HEART:
 						if (collision == 1) {
 							snake1.grow = 4;
 							snake_inc_score(1, 5);
@@ -1055,28 +1129,8 @@ void event_process() {
 							spr_color(i, C64_PURPLE);
 							spr_move(i, event[i].xpos, event[i].ypos);
 						}
-					}
-					break;
-				case SCORPION:
-					if (event[i].xdir) {
-						event[i].xpos++;
-						if (event[i].xpos > (SPR_OFFSET_X + 320 - 8))
-							event[i].active = 0;
-					} else {
-						event[i].xpos--;
-						if (event[i].xpos < (SPR_OFFSET_X - 16))
-							event[i].active = 0;
-					}
-					if (event[i].active) {
-						event[i].animate_counter++;
-						if (event[i].animate_counter >= 3) {
-							event[i].animate_counter = 0;
-							event[i].animate_state++;
-							if (event[i].animate_state >= 5)
-								event[i].animate_state = 0;
-						}
-						// check collision with snake -> punish and disable event
-						uint8_t collision = event_check_collision(event[i].xpos, event[i].ypos);
+						break;
+					case SCORPION:
 						if (collision == 1) {
 							snake_punish(1);
 							event[i].active = 0;
@@ -1094,28 +1148,8 @@ void event_process() {
 							spr_color(i, C64_YELLOW);
 							spr_move(i, event[i].xpos, event[i].ypos);
 						}
-					}
-					break;
-				case BARREL:
-					if (event[i].xdir) {
-						event[i].xpos++;
-						if (event[i].xpos > (SPR_OFFSET_X + 320 - 8))
-							event[i].active = 0;
-					} else {
-						event[i].xpos--;
-						if (event[i].xpos < (SPR_OFFSET_X - 16))
-							event[i].active = 0;
-					}
-					if (event[i].active) {
-						event[i].animate_counter++;
-						if (event[i].animate_counter >= 3) {
-							event[i].animate_counter = 0;
-							event[i].animate_state++;
-							if (event[i].animate_state >= 5)
-								event[i].animate_state = 0;
-						}
-						// check collision with snake -> trigger tail extension and disable barrel
-						uint8_t collision = event_check_collision(event[i].xpos, event[i].ypos);
+						break;
+					case BARREL:
 						if (collision == 1) {
 							snake1.grow = 0;
 							snake1.trail = 8;
@@ -1134,10 +1168,29 @@ void event_process() {
 							spr_color(i, C64_CYAN);
 							spr_move(i, event[i].xpos, event[i].ypos);
 						}
-					}
-					break;
+						break;
+					case KEY:
+						if (collision) {
+							for (uint8_t j = 0; j < REM_HAZARDS_MAX; j++) {
+								if (rem_hazard[j] != REM_HAZARDS_NONE) {
+									game_draw_hazard(rem_hazard[j], TILE_EMPTY);
+									rem_hazard[j] = REM_HAZARDS_NONE;
+									event[i].active = 0;
+									snd_play_donk();
+									break;
+								}
+							}
+						}
+						if (event[i].active) {
+							spr_image(i, 48 + key_animate[event[i].animate_state]);
+							spr_show(i, 1);
+							spr_color(i, C64_RED);
+							spr_move(i, event[i].xpos, event[i].ypos);
+						}
+						break;
+				}
 			}
-			// disable sprite if event was switched off
+			// disable sprite if event was switched off/is now inactive
 			if (!event[i].active)
 				spr_show(i, 0);
 		}
@@ -1146,70 +1199,42 @@ void event_process() {
 
 // ############################################################### game core routines
 
-void game_hazard_map(const uint8_t config) {
-	switch(config) {
-		case 0:
-			// no obstacles
-			break;
-		case 1:
-			// four horizontal obstacles
-			for (uint8_t i = 0; i <= 10; i++) {
-				gfx_draw_hazard(5 + i, 5);
-				gfx_draw_hazard(24 + i, 5);
-				gfx_draw_hazard(5 + i, 16);
-				gfx_draw_hazard(24 + i, 16);
+// draw a single hazard from the list (w x h cells starting at x, y)
+void game_draw_hazard(const uint8_t ndx, const uint8_t chr) {
+	uint8_t y = hazard[ndx].y;
+	for (uint8_t j = 0; j < hazard[ndx].h; j++) {
+		uint8_t x = hazard[ndx].x;
+		for (uint8_t i = 0; i < hazard[ndx].w; i++) {
+			gfx_set_xy(x, y, C64_LIGHT_RED, chr);
+			x++;
+		}
+		y++;
+	}
+}
+
+// draw the hazard map corresponding to the given level (1..50)
+void game_hazard_map(uint8_t level) {
+	if (level == 0 || level > 50)
+		level = 50;
+	for (uint8_t i = 0; i < REM_HAZARDS_MAX; i++) {
+		rem_hazard[i] = REM_HAZARDS_NONE;
+	}
+	const uint8_t rem_hazard_threshold = (50 - level);
+	const uint8_t map = (level - 1) % 5;
+	// draw all hazards of this map type from the list, locked ones only show up by chance
+	uint8_t n = 0;
+	for (uint8_t i = 0; i < HAZARD_N; i++) {
+		if (hazard[i].map != map)
+			continue;
+		if (hazard[i].kind == HAZARD_FIXED) {
+			game_draw_hazard(i, TILE_HAZARD);
+		} else {
+			if (n < REM_HAZARDS_MAX && (rng_next() & 0x3f) >= rem_hazard_threshold) {
+				game_draw_hazard(i, TILE_REMOVABLE);
+				rem_hazard[n] = i;
+				n++;
 			}
-			break;
-		case 2:
-			// four crosses
-			for (uint8_t i = 0; i <= 7; i++) {
-				gfx_draw_hazard(8 - 3 + i, 5);
-				gfx_draw_hazard(8 - 3 + i, 18);
-				gfx_draw_hazard(30 - 3 + i, 5);
-				gfx_draw_hazard(30 - 3 + i, 18);
-			}
-			for (uint8_t i = 0; i <= 6; i++) {
-				gfx_draw_hazard(8, 6 - 3 + i);
-				gfx_draw_hazard(31, 6 - 3 + i);
-				gfx_draw_hazard(8, 17 - 3 + i);
-				gfx_draw_hazard(31, 17 - 3 + i);
-			}
-			break;
-		case 3:
-			// four blocks
-			for (uint8_t x = 0; x <= 7; x++) {
-				for (uint8_t y = 0; y <= 7; y++) {
-					gfx_draw_hazard(8 - 3 + x, 6 - 3 + y);
-					gfx_draw_hazard(8 - 3 + x, 17 - 3 + y);
-					gfx_draw_hazard(30 - 3 + x, 6 - 3 + y);
-					gfx_draw_hazard(30 - 3 + x, 17 - 3 + y);
-				}
-			}
-			break;
-		case 4:
-			// four L-like obstacles
-			for (uint8_t x = 0; x <= 10; x++) {
-				gfx_draw_hazard(3 + x, 3);
-				gfx_draw_hazard(6 + x, 9);
-				gfx_draw_hazard(6 + x, 14);
-				gfx_draw_hazard(3 + x, 19);
-				gfx_draw_hazard(26 + x, 3);
-				gfx_draw_hazard(23 + x, 9);
-				gfx_draw_hazard(23 + x, 14);
-				gfx_draw_hazard(26 + x, 19);
-			}
-			for (uint8_t y = 0; y <= 3; y++) {
-				gfx_draw_hazard(3, 3 + y);
-				gfx_draw_hazard(36, 3 + y);
-				gfx_draw_hazard(3, 16 + y);
-				gfx_draw_hazard(36, 16 + y);
-				gfx_draw_hazard(16, 6 + y);
-				gfx_draw_hazard(23, 6 + y);
-				gfx_draw_hazard(16, 14 + y);
-				gfx_draw_hazard(23, 14 + y);
-			}
-		default:
-			break;
+		}
 	}
 }
 
@@ -1223,8 +1248,9 @@ uint8_t EVENT_SPAWN_TICKS =	50;		// number of frames between event spawns
 uint8_t EVENT_SPAWN_TICKS_LVL[10] = { 200, 150, 100, 100, 50, 50, 25, 25, 25, 25};
 
 // event spawning probability per every 5 levels, p = number from below / 128
-uint8_t EVENT_SPAWN_FOOD_LVL[10] =		{ 90, 80, 70, 60, 50, 40, 30, 20, 20, 15};
-uint8_t EVENT_SPAWN_BARREL_LVL[10] =	{ 20, 25, 30, 35, 40, 45, 40, 30, 20, 15};
+uint8_t EVENT_SPAWN_KEY_LVL[10] =		{ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
+uint8_t EVENT_SPAWN_FOOD_LVL[10] =		{ 90, 80, 70, 60, 40, 35, 30, 25, 20, 15};
+uint8_t EVENT_SPAWN_BARREL_LVL[10] =	{ 20, 20, 25, 30, 30, 30, 30, 25, 20, 15};
 
 #define PLAYER_VS_PLAYER	0		// p v p
 #define PLAYER_VS_COMPUTER	1		// p v e
@@ -1239,7 +1265,7 @@ uint8_t highscore[4] = {0, 0, 0, 0};
 
 void game_loop(void) {
 	uint8_t first_level = 1;		// first level of the game, only reset
-	uint8_t level = 1;				// current level (1..50)
+	uint8_t level = 46;				// current level (1..50)
 	uint8_t	stop = 0;
 
 	while (!stop) {
@@ -1262,10 +1288,7 @@ void game_loop(void) {
 
 		// set up screen
 		gfx_setup_game_screen();
-		if (level < 50)
-			game_hazard_map((level - 1) % 5);
-		else
-			game_hazard_map(4);
+		game_hazard_map(level);
 		gfx_update_score();
 
 		snake_draw_head(1);
@@ -1346,13 +1369,26 @@ void game_loop(void) {
 					if (event_spawn_counter >= EVENT_SPAWN_TICKS) {
 						event_spawn_counter = 0;
 						uint8_t rng = rng_next() & 0x7F;
-						if (rng < EVENT_SPAWN_FOOD_LVL[level_ndx]) {
-							event_add(HEART);
+						if (rng < EVENT_SPAWN_KEY_LVL[level_ndx]) {
+							uint8_t rem_hazard_present = 0;
+							for (uint8_t i = 0; i < REM_HAZARDS_MAX; i++)
+								if (rem_hazard[i] != REM_HAZARDS_NONE) {
+									rem_hazard_present++;
+									break;
+								}
+							if (rem_hazard_present)
+								event_add(KEY);
+							else
+								event_add(HEART);
 						} else {
-							if (rng < EVENT_SPAWN_BARREL_LVL[level_ndx] + EVENT_SPAWN_FOOD_LVL[level_ndx]) {
-								event_add(BARREL);
+							if (rng < EVENT_SPAWN_FOOD_LVL[level_ndx] + EVENT_SPAWN_KEY_LVL[level_ndx]) {
+								event_add(HEART);
 							} else {
-								event_add(SCORPION);
+								if (rng < EVENT_SPAWN_BARREL_LVL[level_ndx] + EVENT_SPAWN_FOOD_LVL[level_ndx] + EVENT_SPAWN_KEY_LVL[level_ndx]) {
+									event_add(BARREL);
+								} else {
+									event_add(SCORPION);
+								}
 							}
 						}
 					} else {

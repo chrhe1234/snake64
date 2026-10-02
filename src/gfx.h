@@ -22,7 +22,8 @@
 
 #define	TILE_EMPTY	0x20
 #define	TILE_FOOD	0x53
-#define TILE_HAZARD	0x66
+#define TILE_HAZARD	0x81        // was 0x66
+#define TILE_REMOVABLE  0x80    // removable hazard
 
 // define snake part character ids
 #define SP_HEAD		87

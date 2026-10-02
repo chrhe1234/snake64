@@ -117,6 +117,15 @@ const Sound sound_gulp = {
     .duration = 20
 };
 
+static const Sound sound_donk = {
+    .freq     = 0x0300,
+    .pwm      = 0x0400,
+    .ctrl     = SID_CTRL_RECT,
+    .attdec   = 0x27,
+    .susrel   = 0x2a,
+    .duration = 14
+};
+
 #define VIC_RASTER (*(volatile uint8_t *)0xd012)
 
 void wait_frame(void) {
@@ -155,6 +164,11 @@ void snd_play_bounce() {
 void snd_play_death() {
 	snd_play(0, &sound_death);
 }
+
+void snd_play_donk() {
+    snd_play(0, &sound_donk);
+}
+
 
 void snd_test() {
 	snd_init();

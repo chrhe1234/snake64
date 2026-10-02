@@ -228,6 +228,32 @@ void gfx_init() {
 		sta		$3800 + 39 * 8 + 3
 		sta		$3800 + 39 * 8 + 4
 		sta		$3800 + 39 * 8 + 5
+
+		// set character 128 to 0xff 0x81 0xbd 0xa5 0xa5 0xbd 0x81 0xff
+		lda		#$ff
+		sta		$3800 + 128 * 8 + 0
+		sta		$3800 + 128 * 8 + 7
+		lda		#$81
+		sta		$3800 + 128 * 8 + 1
+		sta		$3800 + 128 * 8 + 6
+		lda		#$bd
+		sta		$3800 + 128 * 8 + 2
+		sta		$3800 + 128 * 8 + 5
+		lda		#$a5
+		sta		$3800 + 128 * 8 + 3
+		sta		$3800 + 128 * 8 + 4
+
+		// set character 129 to 0xff 0x81 ... 0x81 0xff
+		lda		#$ff
+		sta		$3800 + 129 * 8 + 0
+		sta		$3800 + 129 * 8 + 7
+		lda		#$81
+		sta		$3800 + 129 * 8 + 1
+		sta		$3800 + 129 * 8 + 6
+		sta		$3800 + 129 * 8 + 2
+		sta		$3800 + 129 * 8 + 5
+		sta		$3800 + 129 * 8 + 3
+		sta		$3800 + 129 * 8 + 4
 	}
 	gfx_scr_set(0x20);
 	gfx_clr_set(0x01);

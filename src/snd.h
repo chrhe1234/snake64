@@ -33,6 +33,8 @@ void snd_play_bounce();
 
 void snd_play_death();
 
+void snd_play_donk();
+
 void snd_init();
 
 void snd_stop_all();
