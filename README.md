@@ -8,7 +8,8 @@ first attempt at a more complete program and game for the C64.
 The player controls a snake that is constantly moving and needs to avoid obstacles (e.g. objects, the other snake,
 itself) while at the same time collecting food (heart) to grow. Hitting an obstacle or being attacked by a predator
 (scorpion) costs food and shortens the snake. If the snake gets too short it dies. If both snakes die the game is over.
-If a poisonous barrel is hit, the snake will leave a poisonous trail (obstacle) behind for some time.
+If a poisonous barrel is hit, the snake will leave a poisonous trail (obstacle) behind for some time. Removable 
+obstacles start appearing in the later levels, which restrict movement further. They can be removed by catching a special event. 
 
 The title screen should be self-explanatory. In the game, the snakes are controlled by joysticks (port 2 for 1st
 player = left = green and port 1 for 2nd player = right = blue) or, if selected, by the computer. Press RUN/STOP for
@@ -33,16 +34,9 @@ Ingame:
 
 ## To-Do
 
-* Add an "hourglass" event that increases the remaining time as a tactical device? It could allow more food collection
-  and growth and thereby also can make the remaining level more difficult. If one player is already dead, the other one
-  pull ahead in points. But this is visually not easy to decipher and the benefit may be unclear... The alternative is a
-  "key" that, when collected, opens up barriers. Those barriers should not close off entire sections of the arena but
-  complicate navigation at higher levels. Requires a bit more work during level setup, but it's easy to understand visually and
-  matches the general path-seeking logic of the games. ... Complete removable obstacles for further levels.
+* Correct erratic movements. Indicate snake heading.
 
 * The game is way too fast at the beginning. Slow down all movement by a factor of 4 for levels 1-5 and 2 for levels 6-10.
-
-* Correct erratic movements. Indicate snake heading.
 
 * The highscore could be expanded to a list of three (because that fits on the screen), which should be loaded when
   the game starts and saved whenever it changes. Not sure if we need initials for that.
@@ -73,7 +67,7 @@ Ingame:
       `skip_right` suppress columns outside the screen. Each column reads `yc` and `yc+1` with two
       self-modified `lda $ffff,x`, both patched with row `yc`'s address; the second read adds 40 to X instead of a
       second row-table lookup (the row tables are strict `base + row*40`). Both instructions must be patched.
-    * `HEART` -> food, `SCORPION` -> punish, `BARREL` -> trail
+    * `HEART` -> food, `SCORPION` -> punish, `BARREL` -> trail, `KEY` -> remove removable hazard
 
 * Food spawning/`food_check()` (every `FOOD_TICKS` = 50 frames, only in frames without advance, computer move or spawn):
   only the first inactive slot gets the spawn search per call with `FOOD_SPAWN_TRIES` = 5 random tries. Active slots age
@@ -122,6 +116,9 @@ Ingame:
 * Using `%` where absolutely needed is ok because Oscar64's `divmod` is efficient and timeing is predictable.
 
 ## Done
+
+* Added removable barriers. Those barriers do not close off entire sections of the arena but complicate navigation at
+  higher levels. Hopefully, this will be easy to understand visually.
 
 * The score is now display again on the "game over" screen.
 

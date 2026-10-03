@@ -63,6 +63,7 @@ const int8_t ddy[4] = {-1, 0, 1, 0};
 
 #define	SNAKE_MAX		240
 
+
 // number of consecutive blocked advance-ticks tolerated before a trapped snake starts shrinking
 #define STUCK_TIMEOUT	4
 
@@ -257,15 +258,19 @@ __noinline uint8_t dec8(uint8_t v) {
 // draw head of the snake (1st two pieces)
 void snake_draw_head(uint8_t s) {
 	if (s == 1) {
-		gfx_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], S1_COLOR, SP_HEAD);
+//		gfx_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], S1_COLOR, SP_HEAD);
+		uint8_t color = snake1.status == SNAKE_DEAD ? C64_DARK_GRAY : S1_COLOR;
+		gfx_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], color, SP_HEADU + snake1.direction);
 		uint8_t p = dec8(snake1.start);
-		gfx_set_xy(snake1.x[p], snake1.y[p], S1_COLOR, SP_BODY);
+		gfx_set_xy(snake1.x[p], snake1.y[p], color, SP_BODY);
 		return;
 	}
 	if (s == 2) {
-		gfx_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], S2_COLOR, SP_HEAD);
+//		gfx_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], S2_COLOR, SP_HEAD);
+		uint8_t color = snake2.status == SNAKE_DEAD ? C64_DARK_GRAY : S2_COLOR;
+		gfx_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], color, SP_HEADU + snake2.direction);
 		uint8_t p = dec8(snake2.start);
-		gfx_set_xy(snake2.x[p], snake2.y[p], S2_COLOR, SP_BODY);
+		gfx_set_xy(snake2.x[p], snake2.y[p], color, SP_BODY);
 		return;
 	}
 }
@@ -881,11 +886,23 @@ const Hazard hazard[] = {
 	{ 2, HAZARD_FIXED,     31,  3,  1,  7 },
 	{ 2, HAZARD_FIXED,      8, 14,  1,  7 },
 	{ 2, HAZARD_FIXED,     31, 14,  1,  7 },
+	{ 2, HAZARD_REMOVABLE, 13,  5, 14,  1 },
+	{ 2, HAZARD_REMOVABLE, 13, 18, 14,  1 },
 	// map type 3: four blocks
-	{ 3, HAZARD_FIXED,      5,  3,  8,  8 },
-	{ 3, HAZARD_FIXED,      5, 14,  8,  8 },
-	{ 3, HAZARD_FIXED,     27,  3,  8,  8 },
-	{ 3, HAZARD_FIXED,     27, 14,  8,  8 },
+	{ 3, HAZARD_FIXED,      5,  3,  8,  1 },
+	{ 3, HAZARD_FIXED,      5, 14,  8,  1 },
+	{ 3, HAZARD_FIXED,     27,  3,  8,  1 },
+	{ 3, HAZARD_FIXED,     27, 14,  8,  1 },
+	{ 3, HAZARD_FIXED,      5, 10,  8,  1 },
+	{ 3, HAZARD_FIXED,      5, 21,  8,  1 },
+	{ 3, HAZARD_FIXED,     27, 10,  8,  1 },
+	{ 3, HAZARD_FIXED,     27, 21,  8,  1 },
+	{ 3, HAZARD_REMOVABLE, 12,  4,  1,  6 },
+	{ 3, HAZARD_REMOVABLE, 27,  4,  1,  6 },
+	{ 3, HAZARD_REMOVABLE, 12, 15,  1,  6 },
+	{ 3, HAZARD_REMOVABLE, 27, 15,  1,  6 },
+	{ 3, HAZARD_REMOVABLE, 16,  7,  7,  1 },
+	{ 3, HAZARD_REMOVABLE, 16, 18,  7,  1 },
 	// map type 4: four L-like obstacles and four bars with a hook
 	{ 4, HAZARD_FIXED,      3,  3, 11,  1 },
 	{ 4, HAZARD_FIXED,      6,  9, 11,  1 },
@@ -902,7 +919,11 @@ const Hazard hazard[] = {
 	{ 4, HAZARD_FIXED,     16,  6,  1,  4 },
 	{ 4, HAZARD_FIXED,     23,  6,  1,  4 },
 	{ 4, HAZARD_FIXED,     16, 14,  1,  4 },
-	{ 4, HAZARD_FIXED,     23, 14,  1,  4 }
+	{ 4, HAZARD_FIXED,     23, 14,  1,  4 },
+	{ 4, HAZARD_REMOVABLE, 14,  3, 12,  1 },
+	{ 4, HAZARD_REMOVABLE, 14, 19, 12,  1 },
+	{ 4, HAZARD_REMOVABLE,  6, 10,  1,  4 },
+	{ 4, HAZARD_REMOVABLE, 33, 10,  1,  4 }
 };
 
 #define HAZARD_N	((uint8_t) (sizeof(hazard) / sizeof(hazard[0])))
@@ -1265,7 +1286,7 @@ uint8_t highscore[4] = {0, 0, 0, 0};
 
 void game_loop(void) {
 	uint8_t first_level = 1;		// first level of the game, only reset
-	uint8_t level = 46;				// current level (1..50)
+	uint8_t level = 1;				// current level (1..50)
 	uint8_t	stop = 0;
 
 	while (!stop) {
@@ -1343,6 +1364,9 @@ void game_loop(void) {
 				sta		background_color
 			}
 			event_process();				// update events and their sprites
+
+			snake_draw_head(1);			// redraw player heads to account for potential new heading
+			snake_draw_head(2);
 
 			computer_counter++;
 			advance_counter++;

@@ -229,31 +229,89 @@ void gfx_init() {
 		sta		$3800 + 39 * 8 + 4
 		sta		$3800 + 39 * 8 + 5
 
-		// set character 128 to 0xff 0x81 0xbd 0xa5 0xa5 0xbd 0x81 0xff
+		// set character TILE_REMOVABLE to 0xff 0x81 0xbd 0xa5 0xa5 0xbd 0x81 0xff
 		lda		#$ff
-		sta		$3800 + 128 * 8 + 0
-		sta		$3800 + 128 * 8 + 7
+		sta		$3800 + TILE_REMOVABLE * 8 + 0
+		sta		$3800 + TILE_REMOVABLE * 8 + 7
 		lda		#$81
-		sta		$3800 + 128 * 8 + 1
-		sta		$3800 + 128 * 8 + 6
+		sta		$3800 + TILE_REMOVABLE * 8 + 1
+		sta		$3800 + TILE_REMOVABLE * 8 + 6
 		lda		#$bd
-		sta		$3800 + 128 * 8 + 2
-		sta		$3800 + 128 * 8 + 5
+		sta		$3800 + TILE_REMOVABLE * 8 + 2
+		sta		$3800 + TILE_REMOVABLE * 8 + 5
 		lda		#$a5
-		sta		$3800 + 128 * 8 + 3
-		sta		$3800 + 128 * 8 + 4
+		sta		$3800 + TILE_REMOVABLE * 8 + 3
+		sta		$3800 + TILE_REMOVABLE * 8 + 4
 
-		// set character 129 to 0xff 0x81 ... 0x81 0xff
+		// set character TILE_HAZARD to 0xff 0x81 ... 0x81 0xff
 		lda		#$ff
-		sta		$3800 + 129 * 8 + 0
-		sta		$3800 + 129 * 8 + 7
+		sta		$3800 + TILE_HAZARD * 8 + 0
+		sta		$3800 + TILE_HAZARD * 8 + 7
 		lda		#$81
-		sta		$3800 + 129 * 8 + 1
-		sta		$3800 + 129 * 8 + 6
-		sta		$3800 + 129 * 8 + 2
-		sta		$3800 + 129 * 8 + 5
-		sta		$3800 + 129 * 8 + 3
-		sta		$3800 + 129 * 8 + 4
+		sta		$3800 + TILE_HAZARD * 8 + 1
+		sta		$3800 + TILE_HAZARD * 8 + 6
+		sta		$3800 + TILE_HAZARD * 8 + 2
+		sta		$3800 + TILE_HAZARD * 8 + 5
+		sta		$3800 + TILE_HAZARD * 8 + 3
+		sta		$3800 + TILE_HAZARD * 8 + 4
+
+		// set character SP_HEADU to 0x18, 24, 24, 42, 81, e7, 7e, 3c, and SP_HEADD to vertically flipped version
+		lda		#$18
+		sta		$3800 + SP_HEADU * 8 + 0
+		sta		$3800 + SP_HEADD * 8 + 7
+		lda		#$24
+		sta		$3800 + SP_HEADU * 8 + 1
+		sta		$3800 + SP_HEADD * 8 + 6
+		lda		#$24
+		sta		$3800 + SP_HEADU * 8 + 2
+		sta		$3800 + SP_HEADD * 8 + 5
+		lda		#$42
+		sta		$3800 + SP_HEADU * 8 + 3
+		sta		$3800 + SP_HEADD * 8 + 4
+		lda		#$81
+		sta		$3800 + SP_HEADU * 8 + 4
+		sta		$3800 + SP_HEADD * 8 + 3
+		lda		#$e7
+		sta		$3800 + SP_HEADU * 8 + 5
+		sta		$3800 + SP_HEADD * 8 + 2
+		lda		#$7e
+		sta		$3800 + SP_HEADU * 8 + 6
+		sta		$3800 + SP_HEADD * 8 + 1
+		lda		#$3c
+		sta		$3800 + SP_HEADU * 8 + 7
+		sta		$3800 + SP_HEADD * 8 + 0
+
+		// set character SP_HEADR to 0x30, 68, e6, c1, c1, e6, 68, 30
+		lda		#$30
+		sta		$3800 + SP_HEADR * 8 + 0
+		lda		#$68
+		sta		$3800 + SP_HEADR * 8 + 1
+		lda		#$e6
+		sta		$3800 + SP_HEADR * 8 + 2
+		lda		#$c1
+		sta		$3800 + SP_HEADR * 8 + 3
+		lda		#$c1
+		sta		$3800 + SP_HEADR * 8 + 4
+		lda		#$e6
+		sta		$3800 + SP_HEADR * 8 + 5
+		lda		#$68
+		sta		$3800 + SP_HEADR * 8 + 6
+		lda		#$30
+		sta		$3800 + SP_HEADR * 8 + 7
+
+		// set character SP_HEADL to 0x0c, 16, 67, 83, 83, 67, 16, 0c
+		lda		#$0c
+		sta		$3800 + SP_HEADL * 8 + 0
+		sta		$3800 + SP_HEADL * 8 + 7
+		lda		#$16
+		sta		$3800 + SP_HEADL * 8 + 1
+		sta		$3800 + SP_HEADL * 8 + 6
+		lda		#$67
+		sta		$3800 + SP_HEADL * 8 + 2
+		sta		$3800 + SP_HEADL * 8 + 5
+		lda		#$83
+		sta		$3800 + SP_HEADL * 8 + 3
+		sta		$3800 + SP_HEADL * 8 + 4
 	}
 	gfx_scr_set(0x20);
 	gfx_clr_set(0x01);

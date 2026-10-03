@@ -32,6 +32,11 @@
 #define SP_TAIL2	94
 #define	SP_EMPTY	32
 
+#define SP_HEADU    0x90        // head pointing up, needs to be sequential and in the same order as SDIR_???
+#define SP_HEADR    0x91        // head pointing right
+#define SP_HEADD    0x92        // head pointing down
+#define SP_HEADL    0x93        // head pointing left
+
 // define snake colors
 #define S1_COLOR		C64_LIGHT_GREEN
 #define	S2_COLOR		C64_LIGHT_BLUE
