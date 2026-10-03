@@ -262,7 +262,6 @@ void gfx_init() {
 		lda		#$24
 		sta		$3800 + SP_HEADU * 8 + 1
 		sta		$3800 + SP_HEADD * 8 + 6
-		lda		#$24
 		sta		$3800 + SP_HEADU * 8 + 2
 		sta		$3800 + SP_HEADD * 8 + 5
 		lda		#$42
@@ -284,20 +283,16 @@ void gfx_init() {
 		// set character SP_HEADR to 0x30, 68, e6, c1, c1, e6, 68, 30
 		lda		#$30
 		sta		$3800 + SP_HEADR * 8 + 0
+		sta		$3800 + SP_HEADR * 8 + 7
 		lda		#$68
 		sta		$3800 + SP_HEADR * 8 + 1
+		sta		$3800 + SP_HEADR * 8 + 6
 		lda		#$e6
 		sta		$3800 + SP_HEADR * 8 + 2
+		sta		$3800 + SP_HEADR * 8 + 5
 		lda		#$c1
 		sta		$3800 + SP_HEADR * 8 + 3
-		lda		#$c1
 		sta		$3800 + SP_HEADR * 8 + 4
-		lda		#$e6
-		sta		$3800 + SP_HEADR * 8 + 5
-		lda		#$68
-		sta		$3800 + SP_HEADR * 8 + 6
-		lda		#$30
-		sta		$3800 + SP_HEADR * 8 + 7
 
 		// set character SP_HEADL to 0x0c, 16, 67, 83, 83, 67, 16, 0c
 		lda		#$0c
@@ -454,7 +449,6 @@ void gfx_spr_hide_all() {
 	vic.spr_enable = 0x00;
 }
 
-
 // reset graphics
 void gfx_exit() {
 	gfx_spr_hide_all();
@@ -473,8 +467,6 @@ void gfx_exit() {
 	}
 }
 
-#define FRAME_COLOR		C64_LIGHT_RED
-
 // set up game screen
 void gfx_setup_game_screen() {
 	// clear all
@@ -482,31 +474,23 @@ void gfx_setup_game_screen() {
 	gfx_clr_set(1);
 
 	// draw frame
-	gfx_scr_set_xy(0, 0, 85);
-	gfx_clr_set_xy(0, 0, FRAME_COLOR);
-	gfx_scr_set_xy(39, 0, 73);
-	gfx_clr_set_xy(39, 0, FRAME_COLOR);
-	gfx_scr_set_xy(0, 23, 74);
-	gfx_clr_set_xy(0, 23, FRAME_COLOR);
-	gfx_scr_set_xy(39, 23, 75);
-	gfx_clr_set_xy(39, 23, FRAME_COLOR);
 	for(uint8_t i = 1; i < 23; i++) {
-		gfx_scr_set_xy(0, i, 66);
-		gfx_scr_set_xy(39, i, 66);
-		gfx_clr_set_xy(0, i, FRAME_COLOR);
-		gfx_clr_set_xy(39, i, FRAME_COLOR);
+		gfx_set_xy(0, i, COLOR_FRAME, 66);
+		gfx_set_xy(39, i, COLOR_FRAME, 66);
 	}
-	for(uint8_t i = 1; i < 39; i++) {
-		gfx_scr_set_xy(i, 0, 67);
-		gfx_scr_set_xy(i, 23, 67);
-		gfx_clr_set_xy(i, 0, FRAME_COLOR);
-		gfx_clr_set_xy(i, 23, FRAME_COLOR);
+	for(uint8_t i = 0; i < 40; i++) {
+		gfx_set_xy(i, 0, COLOR_FRAME, 67);
+		gfx_set_xy(i, 23, COLOR_FRAME, 67);
 	}
+	gfx_scr_set_xy(0, 0, 85);
+	gfx_scr_set_xy(39, 0, 73);
+	gfx_scr_set_xy(0, 23, 74);
+	gfx_scr_set_xy(39, 23, 75);
 
 	// set color for score of snake 1 + 2
 	for(uint8_t i = 0; i < 4; i++) {
-		gfx_clr_set_xy(1 + i, 24, S1_COLOR);
-		gfx_clr_set_xy(35 + i, 24, S2_COLOR);
+		gfx_clr_set_xy(1 + i, 24, COLOR_SNAKE1);
+		gfx_clr_set_xy(35 + i, 24, COLOR_SNAKE2);
 	}
 
 	// set up timer indicator
@@ -519,12 +503,12 @@ void gfx_setup_game_screen() {
 
 // draw/put food on the playing field
 void gfx_draw_food(uint8_t x, uint8_t y) {
-	gfx_set_xy(x, y, C64_PURPLE, TILE_FOOD);
+	gfx_set_xy(x, y, COLOR_FOOD, TILE_FOOD);
 }
 
 // draw/put hazard on the playing field
 void gfx_draw_hazard(uint8_t x, uint8_t y) {
-	gfx_set_xy(x, y, C64_LIGHT_RED, TILE_HAZARD);
+	gfx_set_xy(x, y, COLOR_HAZARD, TILE_HAZARD);
 }
 
 // wait for scan line 250, end of frame

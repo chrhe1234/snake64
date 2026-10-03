@@ -1,8 +1,10 @@
-#include <stdlib.h>
+// #include <stdlib.h>
+// #include <stdio.h>
 #include <stdint.h>
 #include <c64/vic.h>
 #include <c64/cia.h>
 #include <c64/sprites.h>
+#include <c64/kernalio.h>
 
 #include "snake.h"
 #include "utils.h"
@@ -12,15 +14,15 @@
 
 // ############################################################### memory layout
 // $0a00-$0bff code/data
-// $0c00-$0fff sprites
-// $1000-$37ff code/data
+// $0c00-$0fbf sprites
+// $0fc0-$37ff code/data
 // $3800-$4000 charset (not initialized)
 // $4000-$a000 BSS/heap/stack (not initialized)
 
-#pragma region(lower1, 0x0880, 0x0c00, , , {code, data})
+#pragma region(lower1, 0x0870, 0x0c00, , , {code, data})
 #pragma section(sprites, 0, , , data)
-#pragma region(sprites_region, 0x0c00, 0x1000, , , {sprites})
-#pragma region(lower2, 0x1000, 0x3800, , , {code, data})
+#pragma region(sprites_region, 0x0c00, 0x0fc0, , , {sprites})
+#pragma region(lower2, 0x0fc0, 0x3800, , , {code, data})
 #pragma section(charset, 0, , , bss)
 #pragma region(charset_region, 0x3800, 0x4000, , , {charset})
 #pragma region(high, 0x4000, 0xa000, , , {bss, heap, stack})
@@ -44,13 +46,11 @@ uint8_t update_score = 0;
 // ############################################################### snakes
 
 // snake direction flags (do not change, those values are assumed in several places)
+// opposite direction is (SDIR_xyz + 2) & 0x03 but faster is actually SDIR_xyz ^ 2 (!)
 #define	SDIR_UP		0
 #define	SDIR_RIGHT	1
 #define	SDIR_DOWN	2
 #define	SDIR_LEFT	3
-
-// opposite direction, alternative is (SDIR_xyz + 2) & 0x03 but that might take a little longer
-uint8_t SDIR_OPPOSITE[4] = {SDIR_DOWN, SDIR_LEFT, SDIR_UP, SDIR_RIGHT};
 
 // snake head movement depending on direction direction changes ddx/ddy[SIDR_xyz]
 const int8_t ddx[4] = {0, 1, 0, -1};
@@ -61,8 +61,8 @@ const int8_t ddy[4] = {-1, 0, 1, 0};
 #define	SNAKE_INACTIVE	1
 #define	SNAKE_DEAD		2
 
+// snake maximum length
 #define	SNAKE_MAX		240
-
 
 // number of consecutive blocked advance-ticks tolerated before a trapped snake starts shrinking
 #define STUCK_TIMEOUT	4
@@ -258,16 +258,14 @@ __noinline uint8_t dec8(uint8_t v) {
 // draw head of the snake (1st two pieces)
 void snake_draw_head(uint8_t s) {
 	if (s == 1) {
-//		gfx_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], S1_COLOR, SP_HEAD);
-		uint8_t color = snake1.status == SNAKE_DEAD ? C64_DARK_GRAY : S1_COLOR;
+		uint8_t color = snake1.status == SNAKE_DEAD ? COLOR_DEAD : COLOR_SNAKE1;
 		gfx_set_xy(snake1.x[snake1.start], snake1.y[snake1.start], color, SP_HEADU + snake1.direction);
 		uint8_t p = dec8(snake1.start);
 		gfx_set_xy(snake1.x[p], snake1.y[p], color, SP_BODY);
 		return;
 	}
 	if (s == 2) {
-//		gfx_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], S2_COLOR, SP_HEAD);
-		uint8_t color = snake2.status == SNAKE_DEAD ? C64_DARK_GRAY : S2_COLOR;
+		uint8_t color = snake2.status == SNAKE_DEAD ? COLOR_DEAD : COLOR_SNAKE2;
 		gfx_set_xy(snake2.x[snake2.start], snake2.y[snake2.start], color, SP_HEADU + snake2.direction);
 		uint8_t p = dec8(snake2.start);
 		gfx_set_xy(snake2.x[p], snake2.y[p], color, SP_BODY);
@@ -280,34 +278,34 @@ void snake_draw_head(uint8_t s) {
 // behind the tail (still occupied by the live body) is left untouched
 void snake_draw_tail(uint8_t s, uint8_t tail_moved) {
 	if (s == 1) {
-		gfx_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], S1_COLOR, SP_TAIL2);
+		gfx_set_xy(snake1.x[snake1.end], snake1.y[snake1.end], COLOR_SNAKE1, SP_TAIL2);
 		uint8_t p1 = inc8(snake1.end);
-		gfx_set_xy(snake1.x[p1], snake1.y[p1], S1_COLOR, SP_TAIL1);
+		gfx_set_xy(snake1.x[p1], snake1.y[p1], COLOR_SNAKE1, SP_TAIL1);
 		if (tail_moved) {
 			uint8_t p2 = dec8(snake1.end);
 			if (snake1.x[p2] != 0xff) {
 				if (snake1.trail == 0)
-					gfx_set_xy(snake1.x[p2], snake1.y[p2], S1_COLOR, SP_EMPTY);
+					gfx_set_xy(snake1.x[p2], snake1.y[p2], COLOR_SNAKE1, SP_EMPTY);
 				else {
 					snake1.trail--;
-					gfx_set_xy(snake1.x[p2], snake1.y[p2], C64_CYAN, SP_TAIL2);
+					gfx_set_xy(snake1.x[p2], snake1.y[p2], COLOR_TRAIL, SP_TAIL2);
 				}
 			}
 		}
 		return;
 	}
 	if (s == 2) {
-		gfx_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], S2_COLOR, SP_TAIL2);
+		gfx_set_xy(snake2.x[snake2.end], snake2.y[snake2.end], COLOR_SNAKE2, SP_TAIL2);
 		uint8_t p1 = inc8(snake2.end);
-		gfx_set_xy(snake2.x[p1], snake2.y[p1], S2_COLOR, SP_TAIL1);
+		gfx_set_xy(snake2.x[p1], snake2.y[p1], COLOR_SNAKE2, SP_TAIL1);
 		if (tail_moved) {
 			uint8_t p2 = dec8(snake2.end);
 			if (snake2.x[p2] != 0xff) {
 				if (snake2.trail == 0)
-					gfx_set_xy(snake2.x[p2], snake2.y[p2], S2_COLOR, SP_EMPTY);
+					gfx_set_xy(snake2.x[p2], snake2.y[p2], COLOR_SNAKE2, SP_EMPTY);
 				else {
 					snake2.trail--;
-					gfx_set_xy(snake2.x[p2], snake2.y[p2], C64_CYAN, SP_TAIL2);
+					gfx_set_xy(snake2.x[p2], snake2.y[p2], COLOR_TRAIL, SP_TAIL2);
 				}
 			}
 		}
@@ -320,7 +318,7 @@ void snake_draw_body(uint8_t s) {
 	if (s == 1) {
 		for (uint8_t i = snake1.start - 2;;) {
 			gfx_scr_set_xy(snake1.x[i], snake1.y[i], SP_BODY);
-			gfx_clr_set_xy(snake1.x[i], snake1.y[i], S1_COLOR);
+			gfx_clr_set_xy(snake1.x[i], snake1.y[i], COLOR_SNAKE1);
 			--i;
 			if (i == (uint8_t) (snake1.end + 1))
 				break;
@@ -330,7 +328,7 @@ void snake_draw_body(uint8_t s) {
 	if (s == 2) {
 		for (uint8_t i = (uint8_t) snake2.start - 2;;) {
 			gfx_scr_set_xy(snake2.x[i], snake2.y[i], SP_BODY);
-			gfx_clr_set_xy(snake2.x[i], snake2.y[i], S2_COLOR);
+			gfx_clr_set_xy(snake2.x[i], snake2.y[i], COLOR_SNAKE2);
 			--i;
 			if (i == (uint8_t) (snake2.end + 1))
 				break;
@@ -343,7 +341,7 @@ void snake_draw_body(uint8_t s) {
 void snake_set_dead_color(uint8_t s) {
 	if (s == 1) {
 		for (uint8_t i = snake1.start;;) {
-			gfx_clr_set_xy(snake1.x[i], snake1.y[i], C64_DARK_GRAY);
+			gfx_clr_set_xy(snake1.x[i], snake1.y[i], COLOR_DEAD);
 			--i;
 			if (i == (uint8_t) (snake1.end - 1))
 				break;
@@ -352,7 +350,7 @@ void snake_set_dead_color(uint8_t s) {
 	}
 	if (s == 2) {
 		for (uint8_t i = snake2.start;;) {
-			gfx_clr_set_xy(snake2.x[i], snake2.y[i], C64_DARK_GRAY);
+			gfx_clr_set_xy(snake2.x[i], snake2.y[i], COLOR_DEAD);
 			--i;
 			if (i == (uint8_t) (snake2.end - 1))
 				break;
@@ -364,7 +362,7 @@ void snake_set_dead_color(uint8_t s) {
 // apply hazard-style punishment to snake s (shrink by one segment while long enough to survive, otherwise die)
 void snake_punish(uint8_t s) {
 	if (s == 1) {
-		background_color = S1_COLOR;
+		background_color = COLOR_SNAKE1;
 		if (snake1.length <= 5) {
 			snake1.status = SNAKE_DEAD;
 			snake_set_dead_color(1);
@@ -380,7 +378,7 @@ void snake_punish(uint8_t s) {
 		return;
 	}
 	if (s == 2) {
-		background_color = S2_COLOR;
+		background_color = COLOR_SNAKE2;
 		if (snake2.length <= 5) {
 			snake2.status = SNAKE_DEAD;
 			snake_set_dead_color(2);
@@ -498,16 +496,19 @@ void snake_init(uint8_t reset_score) {
 	snake1.status = SNAKE_ACTIVE;
 	snake1.direction = SDIR_LEFT;
 	snake1.moved = SDIR_LEFT;
+
 	snake_add(1, 18, 11);
 	snake_add(1, 17, 11);
 	snake_add(1, 16, 11);
 	snake_add(1, 15, 11);
 	snake_add(1, 14, 11);
 	snake_add(1, 13, 11);
+
 	snake_reset(2, reset_score);
 	snake2.status = SNAKE_ACTIVE;
 	snake2.direction = SDIR_RIGHT;
 	snake2.moved = SDIR_RIGHT;
+
 	snake_add(2, 22, 11);
 	snake_add(2, 23, 11);
 	snake_add(2, 24, 11);
@@ -515,6 +516,8 @@ void snake_init(uint8_t reset_score) {
 	snake_add(2, 26, 11);
 	snake_add(2, 27, 11);
 }
+
+// ############################################################### keyboard and joystick input during game
 
 // return != 0 when stop key is stop_pressed
 uint8_t stop_pressed() {
@@ -534,23 +537,27 @@ uint8_t stop_pressed() {
 #define JOY_RIGHT   0x08
 #define JOY_FIRE    0x10
 
-// lookup table for calculating next direction based on last move
-// joystick bits after inversion -> movement direction, 0xff = no or invalid input
-// index [moved & 1][joy & 0x0f], a diagonal is resolved to the turn (perpendicular to the last step):
-// row 0 moving vertically -> horizontal part, row 1 moving horizontally -> vertical part
-const uint8_t JOY_TURN[2][16] = {
-	//	    -   U     D     UD    L    UL    DL     -     R     UR    DR     -     -     -     -     -
-	{ 0xff,  0,    2,  0xff,   3,    3,    3, 0xff,    1,     1,    1, 0xff, 0xff, 0xff, 0xff, 0xff },
-	{ 0xff,  0,    2,  0xff,   3,    0,    2, 0xff,    1,     0,    2, 0xff, 0xff, 0xff, 0xff, 0xff }
+// lookup table for calculating the next direction based on the last executed step (moved)
+// joystick bits after inversion -> new direction, index [moved][joy & 0x0f], 0xff = no change
+// single direction: taken as is, reverse ignored
+// diagonal containing the current heading: no change (protects against a stick held slightly off-axis)
+// diagonal of reverse + perpendicular: the perpendicular part
+// a held stick position never changes the direction a second time, so there is no staircase movement
+const uint8_t JOY_DIR[4][16] = {
+	//	    -     U     D    UD     L    UL    DL     -     R    UR    DR     -     -     -     -     -
+	{ 0xff,    0, 0xff, 0xff,    3, 0xff,    3, 0xff,    1, 0xff,    1, 0xff, 0xff, 0xff, 0xff, 0xff },	// last step U
+	{ 0xff,    0,    2, 0xff, 0xff,    0,    2, 0xff,    1, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },	// last step R
+	{ 0xff, 0xff,    2, 0xff,    3,    3, 0xff, 0xff,    1,    1, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },	// last step D
+	{ 0xff,    0,    2, 0xff,    3, 0xff, 0xff, 0xff, 0xff,    0,    2, 0xff, 0xff, 0xff, 0xff, 0xff }	// last step L
 };
 
-// read joystick, the new direction is checked against the last executed step (moved), not the pending one,
-// so neither a diagonal nor two turns within one advance period can reverse the snake (opposite = d ^ 2)
+// read joystick, the new direction is looked up for the last executed step (moved), not the pending one,
+// so neither a diagonal nor two turns within one advance period can reverse the snake
 void snake_control(uint8_t s) {
 	if (s == 1) {
 		uint8_t joy = ~cia1.pra;		// joystick 2
-		uint8_t d = JOY_TURN[snake1.moved & 1][joy & 0x0f];
-		if (d != 0xff && d != (snake1.moved ^ 2))		// ^2 reverses direction U0 -> D2, R1 -> L3, ...
+		uint8_t d = JOY_DIR[snake1.moved][joy & 0x0f];
+		if (d != 0xff)
 			snake1.direction = d;
 //		if (!(joy & JOY_FIRE))
 //			fire();
@@ -562,14 +569,16 @@ void snake_control(uint8_t s) {
 		uint8_t joy = ~cia1.prb;		// joystick 1
 		cia1.pra = 0x7f;				// restore the value the KERNAL keyboard scan leaves
 		__asm { cli }
-		uint8_t d = JOY_TURN[snake2.moved & 1][joy & 0x0f];
-		if (d != 0xff && d != (snake2.moved ^ 2))		// ^2 reverses direction U0 -> D2, R1 -> L3, ...
+		uint8_t d = JOY_DIR[snake2.moved][joy & 0x0f];
+		if (d != 0xff)
 			snake2.direction = d;
 //		if (!(joy & JOY_FIRE))
 //			fire();
 		return;
 	}
 }
+
+// ############################################################### computer player
 
 // = 0 if the direction is not available (body of snake, obstacle, hazard ...), 1 = available, 2 = forced (food)
 #define SDIR_BLOCKED	0
@@ -671,7 +680,7 @@ void snake_computer(uint8_t s) {
 	}
 	uint8_t forced_move = 0, forced_move_direction = 0;		// check available directions
 	for (uint8_t i = 0; i < 4; i++) {
-		if (i == SDIR_OPPOSITE[hd]) {						// cannot reverse 180°
+		if (i == (hd ^ 2)) {						// cannot reverse 180°
 			snake_dir_available[i] = SDIR_BLOCKED;
 		} else {
 			uint8_t nx = hx + ddx[i];						// no bounds check necessary, head stays within +1 .. MAX-1
@@ -998,9 +1007,12 @@ void event_add(enum EventType t) {
 // top and bottom character from screen for routine below
 uint8_t ecc_chr_top, ecc_chr_bottom;
 
+// true for any of the four directional head characters SP_HEADU..SP_HEADL (SP_HEADU must be a multiple of 4)
+#define IS_HEAD(c)	(((c) & 0xfc) == SP_HEADU)
+
 // check sprite collision with snakes, return 0 if none, snake number otherwise, (x is 0..319 + SPR_OFFSET_X and needs to be 16 bit)
 uint8_t event_check_collision(uint16_t x, uint8_t y) {
-	uint8_t clr, chr;
+	uint8_t clr;
 
 	// top character row overlapping with sprite, always on the screen (0..24), yc + 1 is always on the screen too, see above
 	uint8_t yc = (y - SPR_OFFSET_Y + 10 - 4) >> 3;
@@ -1036,18 +1048,18 @@ uint8_t event_check_collision(uint16_t x, uint8_t y) {
 			lda		$ffff,x				// modified to actual screen row address
 			sta		ecc_chr_bottom
 		}
-		if (ecc_chr_top == SP_HEAD || ecc_chr_top == SP_TAIL1 || ecc_chr_top == SP_TAIL2 || ecc_chr_top == SP_BODY) {
+		if (IS_HEAD(ecc_chr_top) || ecc_chr_top == SP_TAIL1 || ecc_chr_top == SP_TAIL2 || ecc_chr_top == SP_BODY) {
 			clr = gfx_clr_get_xy(xc, yc);
-			if (clr == S1_COLOR)
+			if (clr == COLOR_SNAKE1)
 				return 1;
-			if (clr == S2_COLOR)
+			if (clr == COLOR_SNAKE2)
 				return 2;
 		}
-		if (ecc_chr_bottom == SP_HEAD || ecc_chr_bottom == SP_TAIL1 || ecc_chr_bottom == SP_TAIL2 || ecc_chr_bottom == SP_BODY) {
+		if (IS_HEAD(ecc_chr_bottom) || ecc_chr_bottom == SP_TAIL1 || ecc_chr_bottom == SP_TAIL2 || ecc_chr_bottom == SP_BODY) {
 			clr = gfx_clr_get_xy(xc, yc + 1);
-			if (clr == S1_COLOR)
+			if (clr == COLOR_SNAKE1)
 				return 1;
-			if (clr == S2_COLOR)
+			if (clr == COLOR_SNAKE2)
 				return 2;
 		}
 	}
@@ -1077,18 +1089,18 @@ uint8_t event_check_collision(uint16_t x, uint8_t y) {
 			lda		$ffff,x				// modified to actual screen row address
 			sta		ecc_chr_bottom
 		}
-		if (ecc_chr_top == SP_HEAD || ecc_chr_top == SP_TAIL1 || ecc_chr_top == SP_TAIL2 || ecc_chr_top == SP_BODY) {
+		if (IS_HEAD(ecc_chr_top) || ecc_chr_top == SP_TAIL1 || ecc_chr_top == SP_TAIL2 || ecc_chr_top == SP_BODY) {
 			clr = gfx_clr_get_xy(xc + 1, yc);
-			if (clr == S1_COLOR)
+			if (clr == COLOR_SNAKE1)
 				return 1;
-			if (clr == S2_COLOR)
+			if (clr == COLOR_SNAKE2)
 				return 2;
 		}
-		if (ecc_chr_bottom == SP_HEAD || ecc_chr_bottom == SP_TAIL1 || ecc_chr_bottom == SP_TAIL2 || ecc_chr_bottom == SP_BODY) {
+		if (IS_HEAD(ecc_chr_bottom) || ecc_chr_bottom == SP_TAIL1 || ecc_chr_bottom == SP_TAIL2 || ecc_chr_bottom == SP_BODY) {
 			clr = gfx_clr_get_xy(xc + 1, yc + 1);
-			if (clr == S1_COLOR)
+			if (clr == COLOR_SNAKE1)
 				return 1;
-			if (clr == S2_COLOR)
+			if (clr == COLOR_SNAKE2)
 				return 2;
 		}
 	}
@@ -1146,9 +1158,7 @@ void event_process() {
 						}
 						if (event[i].active) {
 							spr_image(i, 48 + heart_animate[event[i].animate_state]);
-							spr_show(i, 1);
-							spr_color(i, C64_PURPLE);
-							spr_move(i, event[i].xpos, event[i].ypos);
+							spr_color(i, COLOR_HEART);
 						}
 						break;
 					case SCORPION:
@@ -1165,9 +1175,7 @@ void event_process() {
 								spr_image(i, 48 + scorpion_animate[event[i].animate_state]);
 							else
 								spr_image(i, 48 + scorpion_animate_flipped[event[i].animate_state]);
-							spr_show(i, 1);
-							spr_color(i, C64_YELLOW);
-							spr_move(i, event[i].xpos, event[i].ypos);
+							spr_color(i, COLOR_SCORPION);
 						}
 						break;
 					case BARREL:
@@ -1185,9 +1193,7 @@ void event_process() {
 						}
 						if (event[i].active) {
 							spr_image(i, 48 + barrel_animate[event[i].animate_state]);
-							spr_show(i, 1);
-							spr_color(i, C64_CYAN);
-							spr_move(i, event[i].xpos, event[i].ypos);
+							spr_color(i, COLOR_BARREL);
 						}
 						break;
 					case KEY:
@@ -1204,16 +1210,18 @@ void event_process() {
 						}
 						if (event[i].active) {
 							spr_image(i, 48 + key_animate[event[i].animate_state]);
-							spr_show(i, 1);
-							spr_color(i, C64_RED);
-							spr_move(i, event[i].xpos, event[i].ypos);
+							spr_color(i, COLOR_KEY);
 						}
 						break;
 				}
 			}
-			// disable sprite if event was switched off/is now inactive
-			if (!event[i].active)
+			// disable sprite if event was switched off/is now inactive, update position and display otherwise
+			if (!event[i].active) {
 				spr_show(i, 0);
+			} else {
+				spr_show(i, 1);
+				spr_move(i, event[i].xpos, event[i].ypos);
+			}
 		}
 	}
 }
@@ -1226,12 +1234,15 @@ void game_draw_hazard(const uint8_t ndx, const uint8_t chr) {
 	for (uint8_t j = 0; j < hazard[ndx].h; j++) {
 		uint8_t x = hazard[ndx].x;
 		for (uint8_t i = 0; i < hazard[ndx].w; i++) {
-			gfx_set_xy(x, y, C64_LIGHT_RED, chr);
+			gfx_set_xy(x, y, COLOR_HAZARD, chr);
 			x++;
 		}
 		y++;
 	}
 }
+
+// number of removable hazard per every 5 levels (1..5, 6..10, ...)
+uint8_t rem_hazard_level[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 // draw the hazard map corresponding to the given level (1..50)
 void game_hazard_map(uint8_t level) {
@@ -1240,37 +1251,41 @@ void game_hazard_map(uint8_t level) {
 	for (uint8_t i = 0; i < REM_HAZARDS_MAX; i++) {
 		rem_hazard[i] = REM_HAZARDS_NONE;
 	}
-	const uint8_t rem_hazard_threshold = (50 - level);
-	const uint8_t map = (level - 1) % 5;
-	// draw all hazards of this map type from the list, locked ones only show up by chance
-	uint8_t n = 0;
+	const uint8_t map = ((uint8_t) (level - 1)) % 5;
+	// draw all hazards of this map type from the list, removable only as many as possible for that level
+	uint8_t rh_ndx = 0;
 	for (uint8_t i = 0; i < HAZARD_N; i++) {
 		if (hazard[i].map != map)
 			continue;
 		if (hazard[i].kind == HAZARD_FIXED) {
 			game_draw_hazard(i, TILE_HAZARD);
 		} else {
-			if (n < REM_HAZARDS_MAX && (rng_next() & 0x3f) >= rem_hazard_threshold) {
+			if (rh_ndx < REM_HAZARDS_MAX && rh_ndx < rem_hazard_level[((uint8_t) (level - 1)) / 5]) {
 				game_draw_hazard(i, TILE_REMOVABLE);
-				rem_hazard[n] = i;
-				n++;
+				rem_hazard[rh_ndx] = i;
+				rh_ndx++;
 			}
 		}
 	}
 }
 
-#define ADVANCE_TICKS		6		// number of frames between snake advances, must be > 2
+#define ADVANCE_TICKS		6		// number of frames between snake advances at full speed, must be > 2 and divisible by 2 and 3 (speeds 2/4 and 3/4)
 #define COMPUTER_TICKS		3		// number of frames between computer moves, must be > 2
 #define FOOD_TICKS			50		// number of frames between food checks
 #define LEVEL_TIMER_TICKS	50		// number of frames between level timer ticks (e.g. 50)
-uint8_t EVENT_SPAWN_TICKS =	50;		// number of frames between event spawns
+uint16_t EVENT_SPAWN_TICKS = 50;	// number of frames between event spawns (16 bit, scaled by the speed factor)
 
-// EVENT_SPAWN_TICKS for every 5 levels (1..5, 6..10, etc.)
+// EVENT_SPAWN_TICKS for every 5 levels (1..5, 6..10, etc.) at full speed
 uint8_t EVENT_SPAWN_TICKS_LVL[10] = { 200, 150, 100, 100, 50, 50, 25, 25, 25, 25};
 
+// game speed for every 5 levels in quarters of full speed (2 = 50%, 3 = 75%, 4 = 100%), applies to snake
+// advances, event movement and event spawning, level timer and food checks stay in real time
+#define SPEED_FULL	4
+uint8_t SPEED_LVL[10] = { 2, 3, 4, 4, 4, 4, 4, 4, 4, 4};
+
 // event spawning probability per every 5 levels, p = number from below / 128
-uint8_t EVENT_SPAWN_KEY_LVL[10] =		{ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
-uint8_t EVENT_SPAWN_FOOD_LVL[10] =		{ 90, 80, 70, 60, 40, 35, 30, 25, 20, 15};
+uint8_t EVENT_SPAWN_KEY_LVL[10] =		{ 20, 20, 20, 20, 20, 20, 15, 15, 10, 10};
+uint8_t EVENT_SPAWN_FOOD_LVL[10] =		{ 80, 75, 70, 60, 40, 35, 30, 25, 20, 15};
 uint8_t EVENT_SPAWN_BARREL_LVL[10] =	{ 20, 20, 25, 30, 30, 30, 30, 25, 20, 15};
 
 #define PLAYER_VS_PLAYER	0		// p v p
@@ -1282,7 +1297,73 @@ const uint8_t level_timer_char[] = {32, 101, 97, 234, 224};
 
 char level_str[] = S"LEVEL ## OF 50";
 
-uint8_t highscore[4] = {0, 0, 0, 0};
+uint8_t highscore[3][4] = {
+	{0, 0, 0, 0},
+	{0, 0, 0, 0},
+	{0, 0, 0, 0}
+};
+
+const uint8_t fileID = 2;
+const uint8_t channel = 2;
+
+// drive the highscores are loaded from and saved to, set by game_init_device()
+uint8_t game_device = 8;
+
+// use the device the game was loaded from (the KERNAL keeps the last used device at $BA),
+// drive 8 if the game was not loaded from a disk drive (e.g. tape = 1, or 0 if unknown)
+void game_init_device(void) {
+	uint8_t dev = *(volatile uint8_t *) 0xba;
+	game_device = dev >= 8 ? dev : 8;
+}
+
+// read and discard the drive status (e.g. "62,FILE NOT FOUND,00,00"), this also stops
+// the blinking error LED of a 1541 after a failed operation
+void game_read_drive_status(void) {
+	char status[40];
+	krnio_setnam("");
+	if (krnio_open(15, game_device, 15)) {
+		krnio_read(15, status, sizeof(status));
+		krnio_close(15);
+	}
+}
+
+void game_save_highscores(void) {
+	// delete old version
+	krnio_setnam("S0:SNAKE64.HGH");
+	krnio_open(15, game_device, 15);
+	krnio_close(15);
+
+	// create new version
+	krnio_setnam("SNAKE64.HGH,S,W");
+	if (krnio_open(fileID, game_device, channel)) {
+		krnio_write(fileID, (const char*) highscore, sizeof(highscore));
+		krnio_close(fileID);
+	}
+	game_read_drive_status();		// clears e.g. a write protect error
+}
+
+void game_load_highscores(void) {
+	uint8_t ok = 0;
+
+	// attempt to read highscore
+	krnio_setnam("SNAKE64.HGH,S,R");
+	if (krnio_open(fileID, game_device, channel)) {
+		ok = krnio_read(fileID, (char*) highscore, sizeof(highscore)) == sizeof(highscore);
+		krnio_close(fileID);
+	}
+	game_read_drive_status();		// clears "62,FILE NOT FOUND" when there is no highscore file yet
+
+	// accept only a complete file with digits 0..9, otherwise start with an empty list
+	uint8_t *p = (uint8_t*) highscore;
+	for (uint8_t i = 0; i < sizeof(highscore); i++) {
+		if (p[i] > 9)
+			ok = 0;
+	}
+	if (!ok) {
+		for (uint8_t i = 0; i < sizeof(highscore); i++)
+			p[i] = 0;
+	}
+}
 
 void game_loop(void) {
 	uint8_t first_level = 1;		// first level of the game, only reset
@@ -1329,10 +1410,14 @@ void game_loop(void) {
 		uint8_t computer_counter = 0;
 		uint8_t food_counter = 0;
 		uint8_t level_timer_counter = 0;
-		uint8_t event_spawn_counter = 0;
+		uint16_t event_spawn_counter = 0;
+		uint8_t event_counter = 0;
 		uint8_t level_ndx = (level - 1) / 5;		// index for level configuration arrays
 
-		EVENT_SPAWN_TICKS = EVENT_SPAWN_TICKS_LVL[level_ndx];
+		// frame counts are stretched by SPEED_FULL / speed: 50% -> x2, 75% -> x4/3
+		uint8_t speed = SPEED_LVL[level_ndx];
+		uint8_t advance_ticks = ADVANCE_TICKS * SPEED_FULL / speed;
+		EVENT_SPAWN_TICKS = (uint16_t) EVENT_SPAWN_TICKS_LVL[level_ndx] * SPEED_FULL / speed;
 
 		uint8_t level_timer1 = 9;			// 9 main ticks, do not change
 		uint8_t level_timer2 = 4;			// 4 sub ticks, do not change
@@ -1363,7 +1448,11 @@ void game_loop(void) {
 				lda		#C64_BLACK
 				sta		background_color
 			}
-			event_process();				// update events and their sprites
+			event_counter += speed;			// update events and their sprites in speed out of SPEED_FULL frames, evenly spread
+			if (event_counter >= SPEED_FULL) {
+				event_counter -= SPEED_FULL;
+				event_process();
+			}
 
 			snake_draw_head(1);			// redraw player heads to account for potential new heading
 			snake_draw_head(2);
@@ -1374,7 +1463,7 @@ void game_loop(void) {
 			level_timer_counter++;
 			event_spawn_counter++;
 
-			if (advance_counter >= ADVANCE_TICKS) {
+			if (advance_counter >= advance_ticks) {
 				if (snake1.status == SNAKE_ACTIVE) {
 					snake_advance(1);
 				}
@@ -1468,17 +1557,17 @@ void game_loop(void) {
 }
 
 // snake for the menu and game over screen
-char snake_str[] = {SP_TAIL2, SP_TAIL1, SP_BODY, SP_BODY, SP_BODY, SP_HEAD, 0};
+char snake_str[] = {SP_TAIL2, SP_TAIL1, SP_BODY, SP_BODY, SP_BODY, SP_HEADR, 0};
 
 void game_over() {
 	gfx_clr_set(C64_BLACK);
 	gfx_scr_set(32);
 	gfx_print_xy(15, 11, C64_LIGHT_RED, S"GAME OVER");
-	gfx_print_xy(13, 14, S1_COLOR, snake_str);
-	gfx_print_xy(13, 16, S2_COLOR, snake_str);
+	gfx_print_xy(13, 14, COLOR_SNAKE1, snake_str);
+	gfx_print_xy(13, 16, COLOR_SNAKE2, snake_str);
 	for (uint8_t i = 0; i < 4; i++) {
-		gfx_set_xy(20 + i, 14, S1_COLOR, snake1.score[3 - i] + 48);
-		gfx_set_xy(20 + i, 16, S2_COLOR, snake2.score[3 - i] + 48);
+		gfx_set_xy(20 + i, 14, COLOR_SNAKE1, snake1.score[3 - i] + 48);
+		gfx_set_xy(20 + i, 16, COLOR_SNAKE2, snake2.score[3 - i] + 48);
 	}
 	for (uint8_t i = 0; i < 150; i++) {
 		gfx_wait_frame_end();
@@ -1486,23 +1575,41 @@ void game_over() {
 	}
 }
 
+// fixed texts of the menu: position, color and screen code string
+typedef struct {
+	uint8_t x, y, color;
+	const char *str;
+} ScreenText;
+
+const ScreenText menu_text[] = {
+	{0, 9, C64_WHITE, S"MENU"},
+	{2, 11, C64_LIGHT_GRAY, S"F1   START GAME"},
+	{2, 13, C64_LIGHT_GRAY, S"F3   CHANGE MODE"},
+	{2, 17, C64_LIGHT_GRAY, S"F5   EXIT"},
+	{28, 10, C64_DARK_GRAY, S"CHRHE (2026)"},
+	{30, 20, C64_LIGHT_RED, S"HIGHSCORES"},
+	{0, 20, C64_WHITE, S"LAST SCORES"},
+	{2, 22, COLOR_SNAKE1, snake_str},
+	{2, 24, COLOR_SNAKE2, snake_str},
+	{33, 22, C64_LIGHT_RED, S"1."},
+	{33, 23, C64_LIGHT_RED, S"2."},
+	{33, 24, C64_LIGHT_RED, S"3."}
+};
+
 uint8_t game_menu() {
 	gfx_clr_set(C64_BLACK);
 	gfx_scr_set(32);
 	gfx_draw_snake_logo();
-	gfx_print_xy(0, 9, C64_WHITE, S"MENU");
-	gfx_print_xy(2, 11, C64_LIGHT_GRAY, S"F1   START GAME");
-	gfx_print_xy(2, 13, C64_LIGHT_GRAY, S"F3   CHANGE MODE");
-	gfx_print_xy(2, 17, C64_LIGHT_GRAY, S"F5   EXIT");
-	gfx_print_xy(28, 10, C64_DARK_GRAY, S"CHRHE (2026)");
-	gfx_print_xy(31, 20, C64_LIGHT_RED, S"HIGHSCORE");
-	gfx_print_xy(0, 20, C64_WHITE, S"LAST SCORES");
-	gfx_print_xy(2, 22, S1_COLOR, snake_str);
-	gfx_print_xy(2, 24, S2_COLOR, snake_str);
+
+	for (uint8_t t = 0; t < sizeof(menu_text) / sizeof(menu_text[0]); t++)
+		gfx_print_xy(menu_text[t].x, menu_text[t].y, menu_text[t].color, menu_text[t].str);
+
 	for (uint8_t i = 0; i < 4; i++) {
-		gfx_set_xy(14 + i, 22, S1_COLOR, snake1.score[3 - i] + 48);
-		gfx_set_xy(14 + i, 24, S2_COLOR, snake2.score[3 - i] + 48);
-		gfx_set_xy(36 + i, 22, C64_LIGHT_RED, highscore[3 - i] + 48);
+		gfx_set_xy(14 + i, 22, COLOR_SNAKE1, snake1.score[3 - i] + 48);
+		gfx_set_xy(14 + i, 24, COLOR_SNAKE2, snake2.score[3 - i] + 48);
+		gfx_set_xy(36 + i, 22, C64_LIGHT_RED, highscore[0][3 - i] + 48);
+		gfx_set_xy(36 + i, 23, C64_LIGHT_RED, highscore[1][3 - i] + 48);
+		gfx_set_xy(36 + i, 24, C64_LIGHT_RED, highscore[2][3 - i] + 48);
 	}
 
 	while (1) {
@@ -1521,51 +1628,66 @@ uint8_t game_menu() {
 	}
 }
 
-void game_update_highscore() {
-	uint8_t hs = 0;
+// compares score, returns 1 if score 1 > score 2, 0 otherwise
+uint8_t game_better_score(const uint8_t* score1, const uint8_t* score2) {
 	for (int8_t i = 3; i >= 0; i--) {
-		if (snake1.score[i] > highscore[i]) {
-			hs = 1;
-			break;
-		}
-		if (snake1.score[i] < highscore[i]) {
-			hs = 0;
-			break;
-		}
+		if (score1[i] > score2[i])
+			return 1;
+		if (score1[i] < score2[i])
+			return 0;
 	}
-	if (hs) {
-		for (uint8_t i = 0; i < 4; i++)
-			highscore[i] = snake1.score[i];
-	}
+	return 0;
+}
 
-	hs = 0;
-	for (int8_t i = 3; i >= 0; i--) {
-		if (snake2.score[i] > highscore[i]) {
-			hs = 1;
-			break;
-		}
-		if (snake2.score[i] < highscore[i]) {
-			hs = 0;
-			break;
+// test if a score should be added to the highscore list, adds it if so and returns 1, 0 otherwise
+uint8_t game_check_score(const uint8_t* score) {
+	for (uint8_t r = 0; r < 3; r++) {
+		if (game_better_score(score, highscore[r])) {
+			for (uint8_t i = 0; i < 4; i++) {
+				if (r < 2)
+					highscore[2][i] = highscore[1][i];
+				if (r < 1)
+					highscore[1][i] = highscore[0][i];
+				highscore[r][i] = score[i];
+			}
+			return 1;
 		}
 	}
-	if (hs) {
-		for (uint8_t i = 0; i < 4; i++)
-			highscore[i] = snake2.score[i];
+	return 0;
+}
+
+// update highscore from last results
+void game_update_highscores() {
+	uint8_t save = 0;
+	save += game_check_score((uint8_t*) snake1.score);
+	if (game_mode == PLAYER_VS_PLAYER) {
+		// only player results are recorded
+		save += game_check_score((uint8_t*) snake2.score);
 	}
+	if (save)
+		game_save_highscores();
 }
 
 int main(void) {
 	rng_init();
 	gfx_init();
 	snd_init();
-	snake_init(1);	// just to initialize the score to 0 for menu()
+	snake_init(1);		// just to initialize the score to 0 for menu()
+
+	gfx_clr_set(C64_BLACK);	// display something on the screen when trying to load the highscores
+	gfx_scr_set(32);
+	gfx_draw_snake_logo();
+
+	game_init_device();
+	game_load_highscores();
+
 	while(1) {
+		kbd_flush();
 		if (!game_menu())
 			break;
 		game_loop();
 		game_over();
-		game_update_highscore();
+		game_update_highscores();
 	}
 	snd_stop_all();
 	gfx_exit();

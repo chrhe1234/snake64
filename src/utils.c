@@ -73,3 +73,11 @@ uint8_t rng_next(void) {
 		sta		accu
 	}
 }
+
+// discard all keys waiting in the KERNAL keyboard buffer
+void kbd_flush(void) {
+	__asm {
+		lda             #0
+		sta             $c6                             // number of characters in the keyboard buffer
+	}
+}

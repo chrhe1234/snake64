@@ -9,6 +9,8 @@
 
 uint8_t wait_for_key();
 
+void kbd_flush(void);
+
 void rng_init(void);
 
 uint8_t rng_next(void);

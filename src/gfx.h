@@ -20,9 +20,10 @@
 #define C64_LIGHT_BLUE	14
 #define C64_LIGHT_GRAY	15
 
-#define	TILE_EMPTY	0x20
-#define	TILE_FOOD	0x53
-#define TILE_HAZARD	0x81        // was 0x66
+// playing arena tile types
+#define	TILE_EMPTY	    0x20
+#define	TILE_FOOD	    0x53
+#define TILE_HAZARD	    0x81        // was 0x66
 #define TILE_REMOVABLE  0x80    // removable hazard
 
 // define snake part character ids
@@ -30,16 +31,24 @@
 #define	SP_BODY		39
 #define	SP_TAIL1	81
 #define SP_TAIL2	94
-#define	SP_EMPTY	32
-
-#define SP_HEADU    0x90        // head pointing up, needs to be sequential and in the same order as SDIR_???
+#define	SP_EMPTY	TILE_EMPTY
+#define SP_HEADU    0x90        // head pointing up, needs to be sequential and in the same order as SDIR_???, must be multiple of 4 (see IS_HEAD in snake.c)
 #define SP_HEADR    0x91        // head pointing right
 #define SP_HEADD    0x92        // head pointing down
 #define SP_HEADL    0x93        // head pointing left
 
-// define snake colors
-#define S1_COLOR		C64_LIGHT_GREEN
-#define	S2_COLOR		C64_LIGHT_BLUE
+// define colors
+#define COLOR_SNAKE1		C64_LIGHT_GREEN
+#define	COLOR_SNAKE2		C64_LIGHT_BLUE
+#define COLOR_DEAD          C64_DARK_GRAY
+#define COLOR_FRAME		    C64_LIGHT_RED
+#define COLOR_HAZARD        C64_LIGHT_RED
+#define COLOR_FOOD          C64_PURPLE
+#define COLOR_TRAIL 		C64_CYAN
+#define COLOR_HEART         COLOR_FOOD
+#define COLOR_SCORPION      C64_YELLOW
+#define COLOR_BARREL        COLOR_TRAIL
+#define COLOR_KEY           COLOR_HAZARD
 
 extern uint8_t scr_row_low[25];
 extern uint8_t scr_row_high[25];

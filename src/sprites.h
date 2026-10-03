@@ -7,6 +7,6 @@
 #define SPR_OFFSET_Y	50
 #define SPR_N			8
 
-extern volatile uint8_t sprite_data[16][64];
+extern volatile uint8_t sprite_data[15][64];
 
 #endif

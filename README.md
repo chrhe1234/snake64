@@ -34,18 +34,6 @@ Ingame:
 
 ## To-Do
 
-* Correct erratic movements. Indicate snake heading.
-
-* The game is way too fast at the beginning. Slow down all movement by a factor of 4 for levels 1-5 and 2 for levels 6-10.
-
-* The highscore could be expanded to a list of three (because that fits on the screen), which should be loaded when
-  the game starts and saved whenever it changes. Not sure if we need initials for that.
-
-* Flush keyboard buffer before `wait_for_key` in `game_menu`?
-
-* Some memory could be saved by cutting down memory for sprites to 12 x 64. Only 12 sprites are used. There is also a
-  lot of duplicated code in `event_processing()` that could be simplified/trimmed in a final version.
-
 ## Design notes
 
 * One player vs. computer or two player modes. Level ranges from 1 to 50 max. Players can obstruct each other if they
@@ -117,6 +105,15 @@ Ingame:
 
 ## Done
 
+* The highscore has been expanded to a list of three (because that fits on the screen), which is loaded when 
+  the game starts and saved whenever it changes.
+
+* Flushing keyboard buffer before `game_menu` now.
+
+* Corrected erratic movements. Snake heading is now indicated.
+
+* The game is a slower for levels 1-5 and a bit slower for levels 6-10.
+
 * Added removable barriers. Those barriers do not close off entire sections of the arena but complicate navigation at
   higher levels. Hopefully, this will be easy to understand visually.
 
@@ -167,7 +164,7 @@ Ingame:
 
 * Display last score in menu.
 
-* Character set: Do not embed the whole 2k in the program. Instead copy the charset from ROM to 0x3800 and patch it in
+* Character set: Do not embed the whole 2k in the program. Instead, copy the charset from ROM to 0x3800 and patch it in
   place. Reduces the program size by ~ 2k.
 
 * Food system: Implement vsync-based spawn/despawn logic. Limit random placement attempts so spawning cannot get stuck.
